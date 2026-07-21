@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { School, Users, GraduationCap, TrendingUp } from "lucide-react";
+import { School, Users, GraduationCap, TrendingUp, Clock, Check } from "lucide-react";
 
 interface SchoolStats {
   id: string;
