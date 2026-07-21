@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { CheckCircle, Save } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ExamSchedule {
   id: string;

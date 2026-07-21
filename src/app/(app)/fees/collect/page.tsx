@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { CheckCircle, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Student {
   id: string;
