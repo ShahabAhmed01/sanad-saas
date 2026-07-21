@@ -14,12 +14,24 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 export default async function LandingPage() {
-  const supabase = await createClient();
-  const { data: plans } = await supabase
-    .from("plans")
-    .select("*")
-    .eq("is_active", true)
-    .order("price_pkr_monthly");
+  let plans: any[] = [];
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("plans")
+      .select("*")
+      .eq("is_active", true)
+      .order("price_pkr_monthly");
+    plans = data || [];
+  } catch {
+    // Fallback plans if DB connection fails
+    plans = [
+      { id: "1", name: "Trial", slug: "trial", price_pkr_monthly: 0, max_students: 100 },
+      { id: "2", name: "Starter", slug: "starter", price_pkr_monthly: 2999, max_students: 100 },
+      { id: "3", name: "Growth", slug: "growth", price_pkr_monthly: 7999, max_students: 500 },
+      { id: "4", name: "Institution", slug: "institution", price_pkr_monthly: 15999, max_students: 1500 },
+    ];
+  }
 
   return (
     <div className="min-h-screen bg-paper">
