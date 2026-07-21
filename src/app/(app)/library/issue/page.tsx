@@ -18,6 +18,7 @@ interface Book {
 
 interface Transaction {
   id: string;
+  book_id: string;
   book_title: string;
   borrower_name: string;
   issued_at: string;
