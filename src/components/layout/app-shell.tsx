@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sidebar } from "./sidebar";
 import { BottomNav } from "./bottom-nav";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -21,9 +22,10 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar — mobile */}
-        <header className="md:hidden flex items-center h-14 px-4 border-b border-slate-light bg-paper-raised">
-          <div className="flex items-center gap-2">
+        {/* Top bar */}
+        <header className="flex items-center h-14 px-4 border-b border-slate-light bg-paper-raised">
+          {/* Mobile logo */}
+          <div className="md:hidden flex items-center gap-2">
             <div className="flex items-center justify-center w-7 h-7 rounded-md bg-accent text-white font-display font-bold text-xs">
               S
             </div>
@@ -31,6 +33,8 @@ export function AppShell({ children }: AppShellProps) {
               Sanad
             </span>
           </div>
+          <div className="flex-1" />
+          <ThemeToggle />
         </header>
 
         {/* Page content */}
