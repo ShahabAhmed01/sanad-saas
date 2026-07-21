@@ -13,6 +13,7 @@ interface StaffPayroll {
   id: string;
   full_name: string;
   role: string;
+  period_label: string;
   basic_salary: number;
   allowances: number;
   deductions: number;
