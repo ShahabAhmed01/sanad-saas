@@ -1,0 +1,241 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* =========================================================
+   SANAD DESIGN SYSTEM — Section 8.1 Color Tokens
+   ========================================================= */
+
+@theme inline {
+  /* Sanad Brand Colors */
+  --color-ink: #12332F;
+  --color-paper: #F7F6F1;
+  --color-paper-raised: #FFFFFF;
+  --color-accent: #B8862F;
+  --color-accent-ink: #7A5A1F;
+  --color-success: #1F7A5C;
+  --color-danger: #BD4545;
+  --color-slate: #6B6B62;
+  --color-slate-light: #E4E2D8;
+
+  /* shadcn/ui token mapping */
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-card: var(--paper-raised);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--paper-raised);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--paper-raised);
+  --color-secondary: var(--slate-light);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--slate-light);
+  --color-muted-foreground: var(--slate);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-ink);
+  --color-destructive: var(--danger);
+  --color-border: var(--slate-light);
+  --color-input: var(--slate-light);
+  --color-ring: var(--accent);
+  --color-success: var(--success);
+
+  /* Chart colors */
+  --color-chart-1: var(--accent);
+  --color-chart-2: var(--success);
+  --color-chart-3: var(--danger);
+  --color-chart-4: var(--slate);
+  --color-chart-5: var(--accent-ink);
+
+  /* Sidebar */
+  --color-sidebar: var(--ink);
+  --color-sidebar-foreground: var(--paper-raised);
+  --color-sidebar-primary: var(--accent);
+  --color-sidebar-primary-foreground: var(--paper-raised);
+  --color-sidebar-accent: rgba(184, 134, 47, 0.15);
+  --color-sidebar-accent-foreground: var(--paper-raised);
+  --color-sidebar-border: rgba(255, 255, 255, 0.1);
+  --color-sidebar-ring: var(--accent);
+
+  /* Typography — Section 8.2 */
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+  --radius-3xl: 1.375rem;
+  --radius-4xl: 1.625rem;
+}
+
+/* =========================================================
+   DARK MODE — Section 8.1
+   ========================================================= */
+
+.dark {
+  --paper: #0B1E1B;
+  --paper-raised: #132C28;
+  --ink: #E8E6E1;
+  --accent-ink: #D4A84B;
+  --slate: #9A9A91;
+  --slate-light: #1E3D38;
+  --danger: #E05555;
+  --success: #2A9D7A;
+
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-card: var(--paper-raised);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--paper-raised);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--paper-raised);
+  --color-secondary: var(--slate-light);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--slate-light);
+  --color-muted-foreground: var(--slate);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-ink);
+  --color-destructive: var(--danger);
+  --color-border: var(--slate-light);
+  --color-input: var(--slate-light);
+  --color-ring: var(--accent);
+  --color-success: var(--success);
+
+  --color-sidebar: #071512;
+  --color-sidebar-foreground: var(--ink);
+  --color-sidebar-primary: var(--accent);
+  --color-sidebar-primary-foreground: var(--paper-raised);
+  --color-sidebar-accent: rgba(184, 134, 47, 0.2);
+  --color-sidebar-accent-foreground: var(--paper-raised);
+  --color-sidebar-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-ring: var(--accent);
+}
+
+/* =========================================================
+   BASE STYLES
+   ========================================================= */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* =========================================================
+   CUSTOM UTILITIES — Section 8
+   ========================================================= */
+
+/* Tabular numbers for data tables */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Seal stamp animation — Section 8.4 */
+@keyframes stamp-settle {
+  0% {
+    transform: scale(1.3) rotate(-8deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.95) rotate(1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-stamp {
+  animation: stamp-settle 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-stamp {
+    animation: none;
+    opacity: 1;
+  }
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Realtime highlight fade — Section 8.5 */
+@keyframes highlight-fade {
+  0% {
+    background-color: rgba(184, 134, 47, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.animate-highlight {
+  animation: highlight-fade 1s ease-out forwards;
+}
+
+/* Skeleton loading — Section 8.5 */
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: linear-gradient(
+    90deg,
+    var(--slate-light) 25%,
+    rgba(228, 226, 216, 0.5) 50%,
+    var(--slate-light) 75%
+  );
+  background-size: 200% 100%;
+}
+
+.dark .animate-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--slate-light) 25%,
+    rgba(30, 61, 56, 0.5) 50%,
+    var(--slate-light) 75%
+  );
+  background-size: 200% 100;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--slate-light);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--slate);
+}

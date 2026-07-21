@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+.env*
+!.env.example
+README.md
+AI_Agent_Handoff.md
+*.md
+supabase/
+scripts/
+.vscode
+.idea
+*.log
