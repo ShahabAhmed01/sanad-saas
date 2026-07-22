@@ -50,3 +50,5 @@ docker-compose.override.yml
 
 # os
 Thumbs.db
+
+.vercel
