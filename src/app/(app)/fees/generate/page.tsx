@@ -21,11 +21,11 @@ export default function GenerateInvoicesPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const [classesRes, headsRes] = await Promise.all([
-        supabase.from("classes").select("id, name").order("name"),
+      const [sectionsRes, headsRes] = await Promise.all([
+        supabase.from("sections").select("id, name").order("name"),
         supabase.from("fee_heads").select("id, name"),
       ]);
-      setClasses(classesRes.data || []);
+      setClasses(sectionsRes.data || []);
       setFeeHeads(headsRes.data || []);
     }
     load();
@@ -36,18 +36,30 @@ export default function GenerateInvoicesPage() {
     setLoading(true);
     const supabase = createClient();
 
-    // Get active students in the class
+    // Get active students in the section
     const { data: students } = await supabase
       .from("students")
       .select("id, full_name")
       .eq("section_id", selectedClass)
       .eq("status", "active");
 
+    // Get the class_id for this section
+    const { data: section } = await supabase
+      .from("sections")
+      .select("class_id")
+      .eq("id", selectedClass)
+      .single();
+
+    if (!section) {
+      setLoading(false);
+      return;
+    }
+
     // Get fee structures for this class
     const { data: structures } = await supabase
       .from("fee_structures")
       .select("id, fee_head_id, amount, class_id")
-      .eq("class_id", selectedClass);
+      .eq("class_id", section.class_id);
 
     if (!students || !structures || students.length === 0) {
       setLoading(false);
@@ -110,7 +122,7 @@ export default function GenerateInvoicesPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="text-ink">Class / Section</Label>
+            <Label className="text-ink">Section</Label>
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}

@@ -57,14 +57,14 @@ export function staffInvitationEmail(
         body { font-family: 'IBM Plex Sans', sans-serif; background: #F7F6F1; margin: 0; padding: 40px 20px; }
         .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 32px; border: 1px solid #E4E2D8; }
         .logo { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
-        .logo-icon { width: 32px; height: 32px; background: #B88602F; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
+        .logo-icon { width: 32px; height: 32px; background: #B88602; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
         .logo-text { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: #12332F; }
         h1 { font-family: 'Fraunces', serif; color: #12332F; font-size: 24px; margin: 0 0 16px; }
         p { color: #6B6B62; line-height: 1.6; margin: 0 0 16px; }
         .credentials { background: #F7F6F1; border-radius: 8px; padding: 16px; margin: 16px 0; }
         .credentials p { margin: 4px 0; font-size: 14px; }
         .credentials strong { color: #12332F; }
-        .button { display: inline-block; background: #B88602F; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 500; margin: 16px 0; }
+        .button { display: inline-block; background: #B88602; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 500; margin: 16px 0; }
         .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #E4E2D8; font-size: 12px; color: #9A9A91; }
       </style>
     </head>
@@ -106,7 +106,7 @@ export function feeReminderEmail(
         body { font-family: 'IBM Plex Sans', sans-serif; background: #F7F6F1; margin: 0; padding: 40px 20px; }
         .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 32px; border: 1px solid #E4E2D8; }
         .logo { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
-        .logo-icon { width: 32px; height: 32px; background: #B88602F; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
+        .logo-icon { width: 32px; height: 32px; background: #B88602; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
         .logo-text { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: #12332F; }
         h1 { font-family: 'Fraunces', serif; color: #12332F; font-size: 24px; margin: 0 0 16px; }
         p { color: #6B6B62; line-height: 1.6; margin: 0 0 16px; }
@@ -145,11 +145,11 @@ export function welcomeEmail(schoolName: string, adminName: string) {
         body { font-family: 'IBM Plex Sans', sans-serif; background: #F7F6F1; margin: 0; padding: 40px 20px; }
         .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 32px; border: 1px solid #E4E2D8; }
         .logo { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
-        .logo-icon { width: 32px; height: 32px; background: #B88602F; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
+        .logo-icon { width: 32px; height: 32px; background: #B88602; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
         .logo-text { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: #12332F; }
         h1 { font-family: 'Fraunces', serif; color: #12332F; font-size: 24px; margin: 0 0 16px; }
         p { color: #6B6B62; line-height: 1.6; margin: 0 0 16px; }
-        .button { display: inline-block; background: #B88602F; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 500; margin: 16px 0; }
+        .button { display: inline-block; background: #B88602; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 500; margin: 16px 0; }
         .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #E4E2D8; font-size: 12px; color: #9A9A91; }
       </style>
     </head>

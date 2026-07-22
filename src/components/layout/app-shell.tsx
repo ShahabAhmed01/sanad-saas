@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Sidebar } from "./sidebar";
 import { BottomNav } from "./bottom-nav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { CommandPalette } from "@/components/command-palette";
+import { Search } from "lucide-react";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -14,6 +16,9 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-paper">
+      {/* Command Palette */}
+      <CommandPalette />
+
       {/* Desktop Sidebar */}
       <Sidebar
         collapsed={sidebarCollapsed}
@@ -33,6 +38,23 @@ export function AppShell({ children }: AppShellProps) {
               Sanad
             </span>
           </div>
+
+          {/* Search trigger */}
+          <button
+            onClick={() => {
+              document.dispatchEvent(
+                new KeyboardEvent("keydown", { key: "k", ctrlKey: true })
+              );
+            }}
+            className="hidden md:flex items-center gap-2 ml-4 px-3 py-1.5 text-sm text-muted-foreground bg-muted/50 rounded-lg border border-border hover:bg-muted transition-colors"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span>Search...</span>
+            <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-background rounded border border-border">
+              ⌘K
+            </kbd>
+          </button>
+
           <div className="flex-1" />
           <ThemeToggle />
         </header>

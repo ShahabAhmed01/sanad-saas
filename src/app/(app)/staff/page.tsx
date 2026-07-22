@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function StaffPage() {
+  const router = useRouter();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -115,7 +117,7 @@ export default function StaffPage() {
           icon={Users}
           title="No staff members yet"
           description="Add your first staff member to get started. They'll receive an email invitation to set their password."
-          action={{ label: "Add Staff", onClick: () => {} }}
+          action={{ label: "Add Staff", onClick: () => router.push("/staff/invite") }}
         />
       ) : (
         <DataTable

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function ExamsPage() {
+  const router = useRouter();
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -98,7 +100,7 @@ export default function ExamsPage() {
           icon={ClipboardList}
           title="No exams scheduled"
           description="Create your first exam to start tracking student performance."
-          action={{ label: "Create Exam", onClick: () => {} }}
+          action={{ label: "Create Exam", onClick: () => router.push("/exams/create") }}
         />
       ) : (
         <DataTable

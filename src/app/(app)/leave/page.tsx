@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -24,6 +25,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function LeavePage() {
+  const router = useRouter();
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,7 +71,7 @@ export default function LeavePage() {
           icon={CalendarCheck}
           title="No leave requests"
           description="Submit a leave request when you need time off."
-          action={{ label: "Request Leave", onClick: () => {} }}
+          action={{ label: "Request Leave", onClick: () => router.push("/leave/pending") }}
         />
       ) : (
         <div className="space-y-3">

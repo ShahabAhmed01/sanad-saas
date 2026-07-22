@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ interface AttendanceRecord {
 }
 
 export default function AttendancePage() {
+  const router = useRouter();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const today = new Date().toISOString().split("T")[0];
@@ -104,7 +106,7 @@ export default function AttendancePage() {
           icon={CalendarCheck}
           title="No attendance recorded today"
           description="Select a class to take attendance for today."
-          action={{ label: "Take Attendance", onClick: () => {} }}
+          action={{ label: "Take Attendance", onClick: () => router.push("/attendance/mark") }}
         />
       ) : (
         <Card className="border-slate-light">

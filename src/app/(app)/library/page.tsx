@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ interface Book {
 }
 
 export default function LibraryPage() {
+  const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -87,7 +89,7 @@ export default function LibraryPage() {
           icon={BookOpen}
           title="Library is empty"
           description="Add books to your catalog to start tracking issues and returns."
-          action={{ label: "Add Book", onClick: () => {} }}
+          action={{ label: "Add Book", onClick: () => router.push("/library/issue") }}
         />
       ) : (
         <DataTable

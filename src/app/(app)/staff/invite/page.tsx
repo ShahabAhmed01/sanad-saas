@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import { inviteStaff } from "@/lib/actions/auth";
 import { CheckCircle, Mail } from "lucide-react";
 
 const roles = [
@@ -27,52 +28,53 @@ export default function InviteStaffPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [tempPassword, setTempPassword] = useState("");
+  const [error, setError] = useState("");
 
   async function handleInvite() {
     if (!name || !email || !role) return;
     setLoading(true);
+    setError("");
 
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError("Not authenticated");
+        setLoading(false);
+        return;
+      }
 
-    const { data: staff } = await supabase
-      .from("staff")
-      .select("school_id")
-      .eq("id", user.id)
-      .single();
+      const { data: staff } = await supabase
+        .from("staff")
+        .select("school_id")
+        .eq("id", user.id)
+        .single();
 
-    if (!staff) return;
+      if (!staff) {
+        setError("Staff record not found");
+        setLoading(false);
+        return;
+      }
 
-    // Create auth user
-    const tempPass = Math.random().toString(36).slice(-12) + "A1!";
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password: tempPass,
-      email_confirm: true,
-    });
+      const result = await inviteStaff({
+        email,
+        name,
+        role,
+        schoolId: staff.school_id,
+      });
 
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-      return;
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setTempPassword(result.temporaryPassword || "");
+        setSuccess(true);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to send invitation");
     }
 
-    // Create staff record
-    await supabase.from("staff").insert({
-      id: authData.user.id,
-      school_id: staff.school_id,
-      full_name: name,
-      role: role as any,
-      status: "active",
-    });
-
-    setTempPassword(tempPass);
-    setSuccess(true);
     setLoading(false);
   }
-
-  const [error, setError] = useState("");
 
   return (
     <div className="space-y-6">
@@ -93,7 +95,7 @@ export default function InviteStaffPage() {
             <p className="text-xs text-slate">
               Share this password with the staff member. They should change it on first login.
             </p>
-            <Button onClick={() => { setSuccess(false); setName(""); setEmail(""); }} variant="outline">
+            <Button onClick={() => { setSuccess(false); setName(""); setEmail(""); setTempPassword(""); }} variant="outline">
               Invite another
             </Button>
           </CardContent>

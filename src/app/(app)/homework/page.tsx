@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -18,6 +19,7 @@ interface HomeworkItem {
 }
 
 export default function HomeworkPage() {
+  const router = useRouter();
   const [homework, setHomework] = useState<HomeworkItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,7 +61,7 @@ export default function HomeworkPage() {
           icon={FileText}
           title="No homework assigned"
           description="Create homework assignments for your students."
-          action={{ label: "Assign Homework", onClick: () => {} }}
+          action={{ label: "Assign Homework", onClick: () => router.push("/homework/create") }}
         />
       ) : (
         <div className="space-y-3">

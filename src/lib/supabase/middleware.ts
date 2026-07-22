@@ -35,10 +35,42 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Refresh session if expired — required for Server Components
-  try {
-    await supabase.auth.getUser();
-  } catch {
-    // Ignore errors — let the page handle auth
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Public paths that don't require authentication
+  const publicPaths = [
+    "/",
+    "/login",
+    "/signup",
+    "/setup",
+    "/privacy",
+    "/terms",
+    "/platform",
+    "/payment",
+  ];
+
+  const pathname = request.nextUrl.pathname;
+  const isPublicPath = publicPaths.some(
+    (path) => pathname === path || pathname.startsWith(path + "/")
+  );
+
+  // Allow API routes (they handle their own auth)
+  const isApiRoute = pathname.startsWith("/api/");
+
+  // Redirect unauthenticated users to login for protected routes
+  if (!user && !isPublicPath && !isApiRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  // Redirect authenticated users away from login/signup to dashboard
+  if (user && (pathname === "/login" || pathname === "/signup")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;

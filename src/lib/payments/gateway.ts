@@ -194,7 +194,7 @@ export class RapidGateway implements PaymentGateway {
   }
 
   async handleWebhook(
-    payload: any,
+    payload: Record<string, unknown>,
     signature?: string
   ): Promise<{
     event: string;
@@ -202,20 +202,28 @@ export class RapidGateway implements PaymentGateway {
     status: string;
     amount?: number;
   }> {
-    // Verify webhook signature if provided
+    // Verify HMAC signature if provided
     if (signature && this.apiKey) {
-      // TODO: Implement HMAC signature verification
-      // const expectedSignature = crypto
-      //   .createHmac("sha256", this.apiKey)
-      //   .update(JSON.stringify(payload))
-      //   .digest("hex");
+      const crypto = await import("crypto");
+      const body = JSON.stringify(payload);
+      const expectedSignature = crypto
+        .createHmac("sha256", this.apiKey)
+        .update(body)
+        .digest("hex");
+
+      if (!crypto.timingSafeEqual(
+        Buffer.from(signature, "hex"),
+        Buffer.from(expectedSignature, "hex")
+      )) {
+        throw new Error("Invalid webhook signature");
+      }
     }
 
     return {
-      event: payload.event || payload.status || "payment.completed",
-      referenceId: payload.metadata?.reference_id || payload.reference_id || "",
-      status: payload.status || "completed",
-      amount: payload.amount ? payload.amount / 100 : undefined,
+      event: (payload.event as string) || (payload.status as string) || "payment.completed",
+      referenceId: (payload.metadata as Record<string, string>)?.reference_id || (payload.reference_id as string) || "",
+      status: (payload.status as string) || "completed",
+      amount: typeof payload.amount === "number" ? payload.amount / 100 : undefined,
     };
   }
 }

@@ -68,6 +68,13 @@ export default function CollectPaymentPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Get school_id from staff record
+    const { data: staff } = await supabase
+      .from("staff")
+      .select("school_id")
+      .eq("id", user.id)
+      .single();
+
     const paymentAmount = parseFloat(amount);
     const receiptNumber = `REC-${Date.now().toString(36).toUpperCase()}`;
 
@@ -79,6 +86,7 @@ export default function CollectPaymentPage() {
       received_by: user.id,
       receipt_number: receiptNumber,
       notes: notes || null,
+      school_id: staff?.school_id,
     });
 
     // Update invoice status

@@ -37,7 +37,7 @@ create table public.schools (
   name text not null,
   slug text unique not null,
   logo_url text,
-  primary_color text default '#B88602F',
+  primary_color text default '#B88602',
   address text,
   city text,
   phone text,

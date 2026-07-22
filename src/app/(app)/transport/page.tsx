@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ interface Route {
 }
 
 export default function TransportPage() {
+  const router = useRouter();
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,7 +73,7 @@ export default function TransportPage() {
           icon={Bus}
           title="No transport routes"
           description="Set up routes and assign vehicles to manage your school's transport system."
-          action={{ label: "Add Route", onClick: () => {} }}
+          action={{ label: "Add Route", onClick: () => router.push("/transport/assign") }}
         />
       ) : (
         <DataTable

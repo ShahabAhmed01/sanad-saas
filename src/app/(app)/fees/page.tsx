@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function FeesPage() {
+  const router = useRouter();
   const [invoices, setInvoices] = useState<FeeInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, collected: 0, pending: 0 });
@@ -149,7 +151,7 @@ export default function FeesPage() {
           icon={Banknote}
           title="No invoices yet"
           description="Set up your fee structure and generate invoices for your students."
-          action={{ label: "Set up fees", onClick: () => {} }}
+          action={{ label: "Set up fees", onClick: () => router.push("/fees/structure") }}
         />
       ) : (
         <DataTable

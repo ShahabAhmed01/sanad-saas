@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, Suspense } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { CalendarCheck, ClipboardCheck, Banknote, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useSearchParams } from "next/navigation";
 
 interface ChildInfo {
   id: string;
@@ -11,9 +12,11 @@ interface ChildInfo {
   admission_number: string;
 }
 
-export default function ParentDashboard() {
+function ParentDashboardContent() {
   const [child, setChild] = useState<ChildInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const childId = searchParams.get("child");
 
   useEffect(() => {
     async function loadChild() {
@@ -30,13 +33,19 @@ export default function ParentDashboard() {
 
       if (!guardian) { setLoading(false); return; }
 
-      // Get linked student
-      const { data: sg } = await supabase
+      // Build query - if childId is specified, fetch that specific child
+      let query = supabase
         .from("student_guardians")
         .select("student_id, students!inner (id, full_name, admission_number)")
-        .eq("guardian_id", guardian.id)
-        .limit(1)
-        .single();
+        .eq("guardian_id", guardian.id);
+
+      if (childId) {
+        query = query.eq("student_id", childId);
+      } else {
+        query = query.limit(1);
+      }
+
+      const { data: sg } = await query.single();
 
       if (sg) {
         setChild({
@@ -48,7 +57,7 @@ export default function ParentDashboard() {
       setLoading(false);
     }
     loadChild();
-  }, []);
+  }, [childId]);
 
   if (loading) {
     return (
@@ -140,5 +149,19 @@ export default function ParentDashboard() {
         </a>
       </div>
     </div>
+  );
+}
+
+export default function ParentDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="grid grid-cols-2 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-24 bg-paper-raised rounded-xl animate-skeleton" />
+        ))}
+      </div>
+    }>
+      <ParentDashboardContent />
+    </Suspense>
   );
 }

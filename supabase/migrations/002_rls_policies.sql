@@ -695,7 +695,8 @@ using (
       public.has_role('teacher')
       and exam_subject_schedule_id in (
         select ess.id from public.exam_subject_schedule ess
-        join public.section_subject_teachers sst on sst.section_id = ess.class_id
+        join public.sections s on s.class_id = ess.class_id
+        join public.section_subject_teachers sst on sst.section_id = s.id
         where sst.teacher_id = auth.uid()
       )
     )

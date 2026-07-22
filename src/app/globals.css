@@ -62,6 +62,7 @@
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces", ui-serif, Georgia, serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-urdu: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", serif;
 
   /* Radius */
   --radius-sm: 0.375rem;
@@ -74,7 +75,7 @@
 }
 
 /* =========================================================
-   DARK MODE — Section 8.1
+   DARK MODE — Overridden by ThemeProvider at runtime
    ========================================================= */
 
 .dark {
@@ -117,6 +118,11 @@
   --color-sidebar-ring: var(--accent);
 }
 
+/* Theme overrides — applied by ThemeProvider via inline styles */
+[data-theme="emerald-dusk"] { --accent: #1A7A5A; --accent-ink: #0E5C42; }
+[data-theme="warm-sand"] { --accent: #A6612E; --accent-ink: #7A4A22; }
+[data-theme="midnight-royal"] { --accent: #4A5FA5; --accent-ink: #374880; }
+
 /* =========================================================
    BASE STYLES
    ========================================================= */
@@ -131,6 +137,23 @@
   html {
     @apply font-sans;
     font-variant-numeric: tabular-nums;
+  }
+  /* Urdu text */
+  [lang="ur"] body {
+    font-family: var(--font-urdu), var(--font-sans);
+    line-height: 1.8;
+  }
+  [lang="ur"] .font-display {
+    font-family: var(--font-urdu), var(--font-display);
+  }
+  /* RTL support */
+  [dir="rtl"] {
+    text-align: right;
+  }
+  [dir="rtl"] .space-x-2 > :not([hidden]) ~ :not([hidden]),
+  [dir="rtl"] .space-x-3 > :not([hidden]) ~ :not([hidden]),
+  [dir="rtl"] .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 1;
   }
 }
 
@@ -218,7 +241,15 @@
     rgba(30, 61, 56, 0.5) 50%,
     var(--slate-light) 75%
   );
-  background-size: 200% 100;
+  background-size: 200% 100%;
+}
+
+/* Smooth theme transitions */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+html * {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 /* Scrollbar styling */

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ interface Student {
 }
 
 export default function StudentsPage() {
+  const router = useRouter();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -107,7 +109,7 @@ export default function StudentsPage() {
           icon={GraduationCap}
           title="No students yet"
           description="Add your first student or import a CSV file with your student data."
-          action={{ label: "Add Student", onClick: () => {} }}
+          action={{ label: "Add Student", onClick: () => router.push("/students/import") }}
         />
       ) : (
         <DataTable
