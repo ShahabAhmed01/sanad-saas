@@ -13,7 +13,7 @@ interface AuditLog {
   action: string;
   entity_type: string;
   entity_id: string;
-  metadata: any;
+  metadata: Record<string, unknown>;
   created_at: string;
 }
 

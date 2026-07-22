@@ -40,11 +40,11 @@ export default function MarksEntryPage() {
       const { data } = await supabase
         .from("exam_subject_schedule")
         .select("id, max_marks, passing_marks, exams!inner(name), subjects!inner(name), classes!inner(name)");
-      setSchedules((data || []).map((s: any) => ({
+      setSchedules((data || []).map((s: { id: string; max_marks: number; passing_marks: number; exams: { name: string }[]; subjects: { name: string }[]; classes: { name: string }[] }) => ({
         id: s.id,
-        exam_name: s.exams?.name || "",
-        subject_name: s.subjects?.name || "",
-        class_name: s.classes?.name || "",
+        exam_name: s.exams[0]?.name || "",
+        subject_name: s.subjects[0]?.name || "",
+        class_name: s.classes[0]?.name || "",
         max_marks: s.max_marks,
         passing_marks: s.passing_marks,
       })));

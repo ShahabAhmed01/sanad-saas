@@ -9,8 +9,8 @@ const translations = { en, ur } as const;
 
 type TranslationKey = string;
 
-function getNestedValue(obj: any, path: string): string {
-  return path.split(".").reduce((acc, key) => acc?.[key], obj) ?? path;
+function getNestedValue(obj: Record<string, unknown>, path: string): string {
+  return (path.split(".").reduce<unknown>((acc, key) => (acc as Record<string, unknown>)?.[key], obj) as string) ?? path;
 }
 
 interface I18nContextValue {

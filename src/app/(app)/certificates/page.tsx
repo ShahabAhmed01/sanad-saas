@@ -31,9 +31,9 @@ export default function CertificatesPage() {
       .select("id, full_name, admission_number, sections!inner(name)")
       .or(`full_name.ilike.%${search}%,admission_number.ilike.%${search}%`)
       .limit(10);
-    setStudents((data || []).map((s: any) => ({
+    setStudents((data || []).map((s: { id: string; full_name: string; admission_number: string; sections: { name: string }[] }) => ({
       ...s,
-      section_name: s.sections?.name || "",
+      section_name: s.sections[0]?.name || "",
     })));
   }
 

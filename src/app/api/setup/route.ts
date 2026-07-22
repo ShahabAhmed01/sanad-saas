@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         tablesExist: true,
-        tables: data?.map((t: any) => t.table_name) || [],
+        tables: data?.map((t: { table_name: string }) => t.table_name) || [],
       });
     }
 

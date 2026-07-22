@@ -36,12 +36,12 @@ export default function MyClassesPage() {
         `)
         .eq("teacher_id", user.id);
 
-      const mapped = (data || []).map((item: any) => ({
+      const mapped = (data || []).map((item: { id: string; section_id: string; sections: { name: string; class_id: string; classes: { name: string }[] }[]; subjects: { name: string }[] }) => ({
         id: item.id,
         section_id: item.section_id,
-        section_name: item.sections?.name || "",
-        class_name: item.sections?.classes?.name || "",
-        subject_name: item.subjects?.name || "",
+        section_name: item.sections[0]?.name || "",
+        class_name: item.sections[0]?.classes[0]?.name || "",
+        subject_name: item.subjects[0]?.name || "",
       }));
 
       setAssignments(mapped);

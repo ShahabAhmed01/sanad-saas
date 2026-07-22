@@ -219,7 +219,7 @@ export function ReportCardPDF({
             <Text style={styles.infoValue}>{studentName}</Text>
           </View>
           <View style={styles.infoGroup}>
-            <Text style={styles.infoLabel}>Father's Name</Text>
+            <Text style={styles.infoLabel}>Father{'\u2019'}s Name</Text>
             <Text style={styles.infoValue}>{fatherName}</Text>
           </View>
           <View style={styles.infoGroup}>

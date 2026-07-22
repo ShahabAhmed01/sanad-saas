@@ -50,10 +50,10 @@ export default function MarkAttendancePage() {
         .from("sections")
         .select("id, name, classes!inner(name)")
         .order("name");
-      setSections((data || []).map((s: any) => ({
+      setSections((data || []).map((s: { id: string; name: string; classes: { name: string }[] }) => ({
         id: s.id,
         name: s.name,
-        class_name: s.classes?.name || "",
+        class_name: s.classes[0]?.name || "",
       })));
     }
     loadSections();

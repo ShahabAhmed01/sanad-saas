@@ -45,11 +45,11 @@ export default function FeeStructurePage() {
         supabase.from("classes").select("id, name").order("name"),
       ]);
       setFeeHeads(headsRes.data || []);
-      setStructures((structsRes.data || []).map((s: any) => ({
+      setStructures((structsRes.data || []).map((s: Record<string, unknown>) => ({
         ...s,
-        class_name: s.classes?.name || "",
-        fee_head_name: s.fee_heads?.name || "",
-      })));
+        class_name: (s.classes as { name: string } | null)?.name || "",
+        fee_head_name: (s.fee_heads as { name: string } | null)?.name || "",
+      })) as FeeStructure[]);
       setClasses(classesRes.data || []);
     }
     load();

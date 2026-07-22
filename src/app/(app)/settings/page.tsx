@@ -219,7 +219,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-slate mb-4">
-              Turn modules on or off. Disabled modules won't appear in any role's navigation.
+              Turn modules on or off. Disabled modules won&apos;t appear in any role&apos;s navigation.
             </p>
             <div className="space-y-3">
               {modules.map((module) => (
@@ -245,7 +245,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-slate mb-4">
-              Choose a color theme for your school's portal.
+              Choose a color theme for your school&apos;s portal.
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {themes.map((theme) => (

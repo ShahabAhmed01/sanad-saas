@@ -48,10 +48,11 @@ function ParentDashboardContent() {
       const { data: sg } = await query.single();
 
       if (sg) {
+        const student = (sg.students as unknown as ChildInfo[])[0];
         setChild({
-          id: (sg.students as any).id,
-          full_name: (sg.students as any).full_name,
-          admission_number: (sg.students as any).admission_number,
+          id: student.id,
+          full_name: student.full_name,
+          admission_number: student.admission_number,
         });
       }
       setLoading(false);

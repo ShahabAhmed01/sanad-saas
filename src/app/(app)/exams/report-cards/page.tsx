@@ -61,8 +61,21 @@ export default function ReportCardsPage() {
       `)
       .eq("exam_subject_schedule.exams.id", selectedExam);
 
+    interface MarksRecord {
+      student_id: string;
+      marks_obtained: number | null;
+      is_absent: boolean;
+      exam_subject_schedule: {
+        max_marks: number;
+        passing_marks: number;
+        subjects: { name: string };
+        exams: { name: string };
+      };
+    }
+
     // Get student info
-    const studentIds = [...new Set((marks || []).map((m: any) => m.student_id))];
+    const typedMarks = (marks || []) as unknown as MarksRecord[];
+    const studentIds = [...new Set(typedMarks.map((m) => m.student_id))];
     const { data: students } = await supabase
       .from("students")
       .select("id, full_name, admission_number")
@@ -70,8 +83,8 @@ export default function ReportCardsPage() {
 
     // Build report cards
     const cards: ReportCard[] = (students || []).map((student) => {
-      const studentMarks = (marks || []).filter((m: any) => m.student_id === student.id);
-      const subjects = studentMarks.map((m: any) => ({
+      const studentMarks = typedMarks.filter((m) => m.student_id === student.id);
+      const subjects = studentMarks.map((m) => ({
         name: m.exam_subject_schedule?.subjects?.name || "",
         marks: m.is_absent ? 0 : Number(m.marks_obtained || 0),
         max_marks: Number(m.exam_subject_schedule?.max_marks || 100),

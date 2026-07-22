@@ -100,6 +100,7 @@ export function CommandPalette() {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setOpen((prev) => !prev);
+        setSelectedIndex(0);
       }
       if (e.key === "Escape") {
         setOpen(false);
@@ -114,7 +115,6 @@ export function CommandPalette() {
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 50);
-      setSelectedIndex(0);
     }
   }, [open]);
 

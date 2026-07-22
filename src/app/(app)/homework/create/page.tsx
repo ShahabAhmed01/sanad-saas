@@ -27,7 +27,7 @@ export default function CreateHomeworkPage() {
         supabase.from("sections").select("id, name, classes!inner(name)").order("name"),
         supabase.from("subjects").select("id, name").order("name"),
       ]);
-      setSections((secRes.data || []).map((s: any) => ({ id: s.id, name: s.name, class_name: s.classes?.name || "" })));
+      setSections((secRes.data || []).map((s: { id: string; name: string; classes: { name: string }[] }) => ({ id: s.id, name: s.name, class_name: s.classes[0]?.name || "" })));
       setSubjects(subRes.data || []);
     }
     load();

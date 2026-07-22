@@ -99,7 +99,7 @@ export default function DashboardPage() {
 
       if (!staff) return;
       const schoolId = staff.school_id;
-      setSchoolName((staff.schools as any)?.name || "Your School");
+      setSchoolName(((staff.schools as { name: string }[])?.[0])?.name || "Your School");
 
       // Parallel fetch all stats
       const [studentsRes, staffRes, feesRes, attendanceRes, pendingFeesRes] = await Promise.all([

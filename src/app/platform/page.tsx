@@ -31,7 +31,7 @@ export default function PlatformAdminPage() {
 
       // Get counts for each school
       const schoolsWithCounts = await Promise.all(
-        (schoolsData || []).map(async (school: any) => {
+        (schoolsData || []).map(async (school: { id: string; name: string; status: string; created_at: string; plans: { name: string }[] }) => {
           const [staffRes, studentRes] = await Promise.all([
             supabase.from("staff").select("id", { count: "exact", head: true }).eq("school_id", school.id),
             supabase.from("students").select("id", { count: "exact", head: true }).eq("school_id", school.id),
@@ -42,7 +42,7 @@ export default function PlatformAdminPage() {
             status: school.status,
             staff_count: staffRes.count || 0,
             student_count: studentRes.count || 0,
-            plan_name: school.plans?.name || "None",
+            plan_name: school.plans[0]?.name || "None",
             created_at: school.created_at,
           };
         })

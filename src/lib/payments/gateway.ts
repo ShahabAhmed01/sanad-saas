@@ -148,7 +148,7 @@ export class RapidGateway implements PaymentGateway {
         gatewayReference: data.gateway_reference || data.id,
         createdAt: new Date().toISOString(),
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Rapid Gateway error:", error);
       // Return a pending session so the user can retry
       return {

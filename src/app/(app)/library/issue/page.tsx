@@ -47,8 +47,13 @@ export default function LibraryIssueReturnPage() {
         supabase.from("library_transactions").select("*, library_books!inner(title), students(full_name)").is("returned_at", null).order("issued_at", { ascending: false }),
       ]);
       setBooks(booksRes.data || []);
-      setTransactions((transRes.data || []).map((t: any) => ({
-        ...t,
+      setTransactions((transRes.data || []).map((t: { id: string; book_id: string; issued_at: string; due_date: string; returned_at: string | null; fine_amount: number; library_books: { title: string } | null; students: { full_name: string } | null }) => ({
+        id: t.id,
+        book_id: t.book_id,
+        issued_at: t.issued_at,
+        due_date: t.due_date,
+        returned_at: t.returned_at,
+        fine_amount: t.fine_amount,
         book_title: t.library_books?.title || "",
         borrower_name: t.students?.full_name || "Staff",
       })));

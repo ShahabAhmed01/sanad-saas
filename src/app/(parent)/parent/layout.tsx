@@ -63,8 +63,7 @@ export default function ParentLayout({
 
       if (links) {
         const childList = links
-          .map((l) => (l.students as any))
-          .filter(Boolean) as Child[];
+          .flatMap((l) => l.students ?? []) as unknown as Child[];
         setChildren(childList);
         if (childList.length > 0) {
           setSelectedChild(childList[0]);

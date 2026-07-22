@@ -23,7 +23,15 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 export default async function LandingPage() {
-  let plans: any[] = [];
+  interface Plan {
+    id: string;
+    name: string;
+    slug: string;
+    price_pkr_monthly: number;
+    max_students: number;
+    is_active?: boolean;
+  }
+  let plans: Plan[] = [];
   try {
     const supabase = await createClient();
     const { data } = await supabase

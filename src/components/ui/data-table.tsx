@@ -24,7 +24,7 @@ interface DataTableProps<T> {
   onRowClick?: (item: T) => void;
 }
 
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<T>({
   data,
   columns,
   searchable = true,
@@ -43,7 +43,7 @@ export function DataTable<T extends Record<string, any>>({
         const term = search.toLowerCase();
         return searchKeys.some((key) => {
           const value = item[key];
-          return String(value || "")
+          return String(value ?? "")
             .toLowerCase()
             .includes(term);
         });
@@ -115,7 +115,7 @@ export function DataTable<T extends Record<string, any>>({
                       >
                         {col.render
                           ? col.render(item)
-                          : item[col.key] || "—"}
+                          : String((item as Record<string, unknown>)[col.key] ?? "") || "—"}
                       </td>
                     ))}
                   </tr>

@@ -106,7 +106,7 @@ export function OnboardingWizard() {
                   Tell us about your school
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  We'll set everything up in under 5 minutes.
+                  We&apos;ll set everything up in under 5 minutes.
                 </p>
               </div>
 
@@ -236,7 +236,7 @@ export function OnboardingWizard() {
                 <Sparkles className="h-8 w-8 text-success" />
               </div>
               <h2 className="font-display text-2xl font-bold text-foreground">
-                You're all set!
+                You&apos;re all set!
               </h2>
               <p className="text-muted-foreground max-w-sm mx-auto">
                 {data.schoolName ? `${data.schoolName} is` : "Your school is"} ready to go.

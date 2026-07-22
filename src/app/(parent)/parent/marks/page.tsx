@@ -58,7 +58,7 @@ export default function ParentMarks() {
         .eq("student_id", sg.student_id)
         .eq("exam_subject_schedule.exams.status", "published");
 
-      setMarks((data || []) as any);
+      setMarks((data as unknown as MarkRecord[]) || []);
       setLoading(false);
     }
     load();
@@ -82,10 +82,10 @@ export default function ParentMarks() {
             <div key={m.id} className="flex items-center justify-between p-3 bg-paper-raised rounded-lg border border-slate-light">
               <div>
                 <p className="text-sm font-medium text-ink">
-                  {(m.exam_subject_schedule as any)?.subjects?.name || "—"}
+                    {m.exam_subject_schedule?.subjects?.name || "—"}
                 </p>
                 <p className="text-xs text-slate">
-                  {(m.exam_subject_schedule as any)?.exams?.name || "—"}
+                    {m.exam_subject_schedule?.exams?.name || "—"}
                 </p>
               </div>
               <div className="text-right">
@@ -93,7 +93,7 @@ export default function ParentMarks() {
                   <span className="text-sm text-danger">Absent</span>
                 ) : (
                   <span className="text-sm font-bold text-ink tabular-nums">
-                    {Number(m.marks_obtained)} / {Number((m.exam_subject_schedule as any)?.max_marks || 100)}
+                    {Number(m.marks_obtained)} / {Number(m.exam_subject_schedule?.max_marks || 100)}
                   </span>
                 )}
               </div>

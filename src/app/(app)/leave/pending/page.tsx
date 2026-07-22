@@ -30,7 +30,7 @@ export default function PendingLeavePage() {
         .select("*, staff!inner(full_name, role)")
         .eq("status", "pending")
         .order("created_at", { ascending: false });
-      setRequests((data || []) as any);
+      setRequests(data as LeaveRequest[] || []);
       setLoading(false);
     }
     load();
@@ -68,7 +68,7 @@ export default function PendingLeavePage() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="font-medium text-ink">{(req.staff as any)?.full_name}</p>
+                    <p className="font-medium text-ink">{req.staff?.full_name}</p>
                     <p className="text-sm text-slate capitalize">{req.leave_type} Leave</p>
                     <p className="text-xs text-slate mt-1">
                       {new Date(req.starts_on).toLocaleDateString("en-PK")} — {new Date(req.ends_on).toLocaleDateString("en-PK")}

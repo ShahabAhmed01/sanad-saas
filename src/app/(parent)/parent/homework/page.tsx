@@ -41,7 +41,7 @@ export default function ParentHomework() {
 
       if (!sg) { setLoading(false); return; }
 
-      const sectionId = (sg.students as any).section_id;
+      const sectionId = ((sg.students as { section_id: string }[])?.[0])?.section_id;
 
       const { data } = await supabase
         .from("homework")
