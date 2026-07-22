@@ -6,7 +6,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --prefer-offline --no-audit --retry 3
+RUN npm install --no-audit --retry 3
 
 # Rebuild the source code only when needed
 FROM base AS builder
