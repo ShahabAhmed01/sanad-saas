@@ -16,7 +16,7 @@ A production-grade, multi-tenant SaaS platform for Pakistani schools and academi
 ```bash
 # Clone
 git clone https://github.com/ShahabAhmed01/sanad-saas.git
-cd sanad-saas/sanad
+cd sanad-saas
 
 # Configure
 cp .env.example .env.local
@@ -76,7 +76,7 @@ See [DEPLOY.md](DEPLOY.md) for complete guide.
 
 ```bash
 # 1. Connect GitHub repo to Vercel
-# 2. Set root directory to: sanad
+# 2. Root directory: leave empty (default /)
 # 3. Add environment variables
 # 4. Deploy
 ```

@@ -74,7 +74,7 @@ cp .env.example .env.local
 1. Go to https://vercel.com/new
 2. Import GitHub repo: `ShahabAhmed01/sanad-saas`
 3. Framework: Next.js (auto-detected)
-4. Root directory: `sanad`
+4. Root directory: **leave empty** (default `/`)
 5. Build command: `npm run build` (auto-detected)
 6. Install command: `npm ci` (auto-detected)
 
@@ -107,7 +107,7 @@ cp .env.example .env.local
 ```bash
 # Clone and configure
 git clone https://github.com/ShahabAhmed01/sanad-saas.git
-cd sanad-saas/sanad
+cd sanad-saas
 cp .env.example .env.local
 # Edit .env.local with your keys
 
@@ -123,8 +123,8 @@ docker compose up -d
 docker compose -f docker-compose.prod.yml up -d
 
 # Or build locally
-docker compose -f docker-compose.prod.yml build
-docker compose -f docker-compose.prod.yml up -d
+docker compose build
+docker compose up -d
 ```
 
 ### Using Pre-built Image

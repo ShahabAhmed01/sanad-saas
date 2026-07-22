@@ -20,9 +20,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: sanad/package-lock.json
-      - run: cd sanad && npm ci --prefer-offline --no-audit
-      - run: cd sanad && npm run lint
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefer-offline --no-audit
+      - run: npm run lint
 
   typecheck:
     name: Type Check
@@ -33,9 +33,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: sanad/package-lock.json
-      - run: cd sanad && npm ci --prefer-offline --no-audit
-      - run: cd sanad && npx tsc --noEmit
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefer-offline --no-audit
+      - run: npx tsc --noEmit
 
   test:
     name: Tests
@@ -46,9 +46,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: sanad/package-lock.json
-      - run: cd sanad && npm ci --prefer-offline --no-audit
-      - run: cd sanad && npm test
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefer-offline --no-audit
+      - run: npm test
 
   build:
     name: Build
@@ -59,9 +59,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: sanad/package-lock.json
-      - run: cd sanad && npm ci --prefer-offline --no-audit
-      - run: cd sanad && npm run build
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefer-offline --no-audit
+      - run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
