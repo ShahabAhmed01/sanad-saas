@@ -17,12 +17,18 @@
   --color-ink: #12332F;
   --color-paper: #F7F6F1;
   --color-paper-raised: #FFFFFF;
-  --color-accent: #B8862F;
+  --color-accent: #A07426;
   --color-accent-ink: #7A5A1F;
   --color-success: #1F7A5C;
   --color-danger: #BD4545;
-  --color-slate: #6B6B62;
+  --color-slate: #575750;
   --color-slate-light: #E4E2D8;
+
+  /* Elevation shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
 
   /* shadcn/ui token mapping */
   --color-background: var(--paper);
@@ -86,11 +92,17 @@
   --paper: #0B1E1B;
   --paper-raised: #132C28;
   --ink: #E8E6E1;
-  --accent-ink: #D4A84B;
+  --accent-ink: #C9923A;
   --slate: #9A9A91;
   --slate-light: #1E3D38;
   --danger: #E05555;
   --success: #2A9D7A;
+
+  /* Dark mode elevated surfaces */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -2px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.5), 0 4px 6px -4px rgba(0,0,0,0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.6), 0 8px 10px -6px rgba(0,0,0,0.5);
 
   --color-background: var(--paper);
   --color-foreground: var(--ink);
@@ -141,6 +153,11 @@
   html {
     @apply font-sans;
     font-variant-numeric: tabular-nums;
+    /* Typography scale */
+    font-size: 16px;
+    line-height: 1.5;
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
   }
   /* Urdu text */
   [lang="ur"] body {
@@ -158,6 +175,31 @@
   [dir="rtl"] .space-x-3 > :not([hidden]) ~ :not([hidden]),
   [dir="rtl"] .space-x-4 > :not([hidden]) ~ :not([hidden]) {
     --tw-space-x-reverse: 1;
+  }
+  /* Heading hierarchy */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display), var(--font-sans);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  h1 { font-size: 2rem; font-weight: 700; }
+  h2 { font-size: 1.5rem; font-weight: 600; }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  h4 { font-size: 1.125rem; font-weight: 500; }
+  h5 { font-size: 1rem; font-weight: 500; }
+  h6 { font-size: 0.875rem; font-weight: 500; }
+  /* Body text */
+  p {
+    line-height: 1.6;
+  }
+  /* Small text */
+  small {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  /* All caps labels */
+  .uppercase {
+    letter-spacing: 0.05em;
   }
 }
 
@@ -196,10 +238,17 @@
     animation: none;
     opacity: 1;
   }
-  * {
+  .animate-skeleton {
+    animation: none;
+  }
+  .animate-highlight {
+    animation: none;
+  }
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -248,12 +297,13 @@
   background-size: 200% 100%;
 }
 
-/* Smooth theme transitions */
+/* Smooth theme transitions — only on interactive and themed elements */
 html {
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
-html * {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+button, a, [role="button"], input, select, textarea,
+[data-slot="card"], [data-slot="dialog-content"], nav, header, aside, footer {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
 /* Scrollbar styling */

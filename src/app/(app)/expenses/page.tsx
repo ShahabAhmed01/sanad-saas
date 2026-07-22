@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { DataTable } from "@/components/ui/data-table";
 import { createClient } from "@/lib/supabase/client";
-import { CheckCircle, Plus, Receipt } from "lucide-react";
+import { AlertCircle, Plus } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { toast } from "sonner";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface Expense {
   id: string;
@@ -18,49 +24,77 @@ interface Expense {
   spent_on: string;
 }
 
+async function fetchExpenses(schoolId: string): Promise<Expense[]> {
+  const supabase = createClient();
+  const { data } = await supabase.from("expenses").select("*").eq("school_id", schoolId).order("spent_on", { ascending: false });
+  return data || [];
+}
+
 export default function ExpensesPage() {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
+  const schoolId = useSchoolId();
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [category, setCategory] = useState("utilities");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [spentOn, setSpentOn] = useState(new Date().toISOString().split("T")[0]);
-  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    async function load() {
+  const { data: expenses = [], isLoading: loading, error: expensesError } = useQuery({
+    queryKey: queryKeys.school.expenses(schoolId),
+    queryFn: () => fetchExpenses(schoolId),
+    enabled: !!schoolId,
+  });
+
+  const addExpenseMutation = useMutation({
+    mutationFn: async () => {
       const supabase = createClient();
-      const { data } = await supabase.from("expenses").select("*").order("spent_on", { ascending: false });
-      setExpenses(data || []);
-      setLoading(false);
-    }
-    load();
-  }, []);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
 
-  async function addExpense() {
-    if (!amount || !spentOn) return;
-    setSaving(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+      const { data, error } = await supabase.from("expenses").insert({
+        school_id: schoolId,
+        category,
+        description: description || null,
+        amount: parseFloat(amount),
+        spent_on: spentOn,
+        recorded_by: user.id,
+      }).select().single();
 
-    await supabase.from("expenses").insert({
-      category,
-      description: description || null,
-      amount: parseFloat(amount),
-      spent_on: spentOn,
-      recorded_by: user.id,
-    });
+      if (error) throw error;
+      return data;
+    },
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.school.expenses(schoolId) });
 
-    setSaving(false);
-    setShowForm(false);
-    setAmount("");
-    setDescription("");
-    // Reload
-    const { data } = await supabase.from("expenses").select("*").order("spent_on", { ascending: false });
-    setExpenses(data || []);
-  }
+      const previous = queryClient.getQueryData(queryKeys.school.expenses(schoolId));
+
+      const optimisticItem: Expense = {
+        id: crypto.randomUUID(),
+        category,
+        description: description || "",
+        amount: parseFloat(amount),
+        spent_on: spentOn,
+      };
+
+      queryClient.setQueryData(queryKeys.school.expenses(schoolId), (old: Expense[] | undefined) => [
+        optimisticItem,
+        ...(old || []),
+      ]);
+
+      return { previous };
+    },
+    onError: (_err, _newItem, context) => {
+      queryClient.setQueryData(queryKeys.school.expenses(schoolId), context?.previous);
+      toast.error("Failed to record expense");
+    },
+    onSuccess: () => {
+      toast.success("Expense recorded", { description: `PKR ${parseFloat(amount).toLocaleString()} ${category} expense added` });
+      queryClient.invalidateQueries({ queryKey: queryKeys.school.expenses(schoolId) });
+      setShowForm(false);
+      setAmount("");
+      setDescription("");
+    },
+  });
 
   const total = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
 
@@ -81,7 +115,9 @@ export default function ExpensesPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Expenses" }]} />
+      <div className="space-y-6">
       <PageHeader
         title="Expenses"
         description="Track and manage school expenses"
@@ -92,6 +128,14 @@ export default function ExpensesPage() {
           </Button>
         }
       />
+
+      {expensesError && (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <AlertCircle className="h-10 w-10 text-danger mb-3" />
+          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-xs text-slate mt-1">{expensesError.message}</p>
+        </div>
+      )}
 
       {/* Total */}
       <Card className="border-slate-light">
@@ -109,31 +153,31 @@ export default function ExpensesPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label className="text-ink">Category</Label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink">
-                <option value="utilities">Utilities</option>
-                <option value="maintenance">Maintenance</option>
-                <option value="salaries">Salaries</option>
-                <option value="supplies">Supplies</option>
-                <option value="other">Other</option>
-              </select>
+              <Label htmlFor="category" className="text-ink">Category</Label>
+              <Select id="category" value={category} onChange={(e) => setCategory(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder="Utilities" options={[
+                { value: "utilities", label: "Utilities" },
+                { value: "maintenance", label: "Maintenance" },
+                { value: "salaries", label: "Salaries" },
+                { value: "supplies", label: "Supplies" },
+                { value: "other", label: "Other" },
+              ]} />
             </div>
             <div>
-              <Label className="text-ink">Description</Label>
-              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Electricity bill" className="mt-1.5" />
+              <Label htmlFor="description" className="text-ink">Description</Label>
+              <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Electricity bill" className="mt-1.5" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-ink">Amount (PKR)</Label>
-                <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1.5" />
+                <Label htmlFor="amount" className="text-ink">Amount (PKR)</Label>
+                <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1.5" />
               </div>
               <div>
-                <Label className="text-ink">Date</Label>
-                <Input type="date" value={spentOn} onChange={(e) => setSpentOn(e.target.value)} className="mt-1.5" />
+                <Label htmlFor="date" className="text-ink">Date</Label>
+                <Input id="date" type="date" value={spentOn} onChange={(e) => setSpentOn(e.target.value)} className="mt-1.5" />
               </div>
             </div>
-            <Button onClick={addExpense} disabled={saving || !amount} className="w-full bg-accent hover:bg-accent/90 text-white">
-              {saving ? "Saving..." : "Add Expense"}
+            <Button onClick={() => addExpenseMutation.mutate()} disabled={!amount} isLoading={addExpenseMutation.isPending} className="w-full bg-accent hover:bg-accent/90 text-white">
+              Add Expense
             </Button>
           </CardContent>
         </Card>
@@ -148,5 +192,6 @@ export default function ExpensesPage() {
         <DataTable data={expenses} columns={columns} searchKeys={["category", "description"]} searchPlaceholder="Search expenses..." />
       )}
     </div>
+    </>
   );
 }

@@ -8,7 +8,6 @@ import {
   Users,
   GraduationCap,
   CalendarCheck,
-  Banknote,
   MoreHorizontal,
 } from "lucide-react";
 
@@ -45,7 +44,7 @@ export function BottomNav({ items = defaultBottomNavItems }: BottomNavProps) {
               href={item.href}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium transition-colors min-w-[64px]",
-                isActive ? "text-accent" : "text-slate hover:text-ink"
+                isActive ? "text-accent" : "text-slate hover:text-ink hover:bg-muted rounded-lg"
               )}
             >
               <item.icon className="h-5 w-5" />

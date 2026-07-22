@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { AlertTriangle } from "lucide-react";
-import { Banknote, Plus, TrendingUp } from "lucide-react";
+import { AlertTriangle, Banknote, Plus } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 
 interface FeeInvoice {
@@ -29,45 +30,49 @@ const statusColors: Record<string, string> = {
   waived: "bg-slate/10 text-slate",
 };
 
+async function fetchFeeData(): Promise<{
+  invoices: FeeInvoice[];
+  stats: { total: number; collected: number; pending: number };
+}> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: staff } = await supabase
+    .from("staff")
+    .select("school_id")
+    .eq("id", user.id)
+    .single();
+  if (!staff) throw new Error("Staff not found");
+
+  const { data, error } = await supabase
+    .from("fee_invoices")
+    .select("*")
+    .eq("school_id", staff.school_id)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error("Failed to load invoices");
+
+  const invoices = data || [];
+  const total = invoices.reduce((sum, inv) => sum + Number(inv.total_amount), 0);
+  const collected = invoices
+    .filter((inv) => inv.status === "paid")
+    .reduce((sum, inv) => sum + Number(inv.total_amount), 0);
+
+  return { invoices, stats: { total, collected, pending: total - collected } };
+}
+
 export default function FeesPage() {
   const router = useRouter();
-  const [invoices, setInvoices] = useState<FeeInvoice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState({ total: 0, collected: 0, pending: 0 });
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["fees"],
+    queryFn: fetchFeeData,
+  });
 
-  useEffect(() => {
-    async function loadData() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setError("Not authenticated"); setLoading(false); return; }
-
-      const { data: staff, error: staffErr } = await supabase
-        .from("staff")
-        .select("school_id")
-        .eq("id", user.id)
-        .single();
-      if (staffErr || !staff) { setError("Failed to load school info"); setLoading(false); return; }
-
-      const { data, error: queryErr } = await supabase
-        .from("fee_invoices")
-        .select("*")
-        .eq("school_id", staff.school_id)
-        .order("created_at", { ascending: false });
-
-      if (queryErr) { setError("Failed to load invoices"); setLoading(false); return; }
-
-      setInvoices(data || []);
-      const total = (data || []).reduce((sum, inv) => sum + Number(inv.total_amount), 0);
-      const collected = (data || [])
-        .filter((inv) => inv.status === "paid")
-        .reduce((sum, inv) => sum + Number(inv.total_amount), 0);
-
-      setStats({ total, collected, pending: total - collected });
-      setLoading(false);
-    }
-    loadData();
-  }, []);
+  const invoices = data?.invoices || [];
+  const stats = data?.stats || { total: 0, collected: 0, pending: 0 };
 
   const columns = [
     { key: "period_label", header: "Period" },
@@ -103,88 +108,109 @@ export default function FeesPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Fees & Finance"
-        description="Manage fee structures, collections, and payments"
-        action={
-          <div className="flex gap-2">
-            <Button variant="outline">Fee Structure</Button>
-            <Button className="bg-accent hover:bg-accent/90 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              Generate Invoices
-            </Button>
+    <>
+      <Breadcrumbs items={[{ label: "Fees" }]} />
+      <div className="space-y-6">
+        <PageHeader
+          title="Fees & Finance"
+          description="Manage fee structures, collections, and payments"
+          action={
+            <div className="flex gap-2">
+              <Link href="/fees/structure">
+                <Button variant="outline">Fee Structure</Button>
+              </Link>
+              <Link href="/fees/generate">
+                <Button className="bg-accent hover:bg-accent/90 text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Generate Invoices
+                </Button>
+              </Link>
+            </div>
+          }
+        />
+
+        {error && (
+          <Card className="border-danger bg-danger/5">
+            <CardContent className="p-4 flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-danger" />
+              <p className="text-danger font-medium">
+                {error instanceof Error ? error.message : "Failed to load fees"}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Stats */}
+        {!error && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card className="border-slate-light">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-slate">
+                  Total Due
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-ink tabular-nums">
+                  PKR {stats.total.toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-slate-light">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-slate">
+                  Collected
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-success tabular-nums">
+                  PKR {stats.collected.toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-slate-light">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-slate">
+                  Pending
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-danger tabular-nums">
+                  PKR {stats.pending.toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        }
-      />
+        )}
 
-      {error && (
-        <Card className="border-danger bg-danger/5">
-          <CardContent className="p-4 flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-danger" />
-            <p className="text-danger font-medium">{error}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Stats */}
-      {!error && (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-slate-light">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate">Total Due</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-ink tabular-nums">
-              PKR {stats.total.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-slate-light">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate">Collected</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success tabular-nums">
-              PKR {stats.collected.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-slate-light">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate">Pending</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-danger tabular-nums">
-              PKR {stats.pending.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Invoices Table */}
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-12 bg-paper-raised rounded-lg animate-skeleton"
+              />
+            ))}
+          </div>
+        ) : invoices.length === 0 ? (
+          <EmptyState
+            icon={Banknote}
+            title="No invoices yet"
+            description="Set up your fee structure and generate invoices for your students."
+            action={{
+              label: "Set up fees",
+              onClick: () => router.push("/fees/structure"),
+            }}
+          />
+        ) : (
+          <DataTable
+            data={invoices}
+            columns={columns}
+            searchKeys={["period_label", "status"]}
+            searchPlaceholder="Search by period or status..."
+          />
+        )}
       </div>
-      )}
-
-      {/* Invoices Table */}
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 bg-paper-raised rounded-lg animate-skeleton" />
-          ))}
-        </div>
-      ) : invoices.length === 0 ? (
-        <EmptyState
-          icon={Banknote}
-          title="No invoices yet"
-          description="Set up your fee structure and generate invoices for your students."
-          action={{ label: "Set up fees", onClick: () => router.push("/fees/structure") }}
-        />
-      ) : (
-        <DataTable
-          data={invoices}
-          columns={columns}
-          searchKeys={["period_label", "status"]}
-          searchPlaceholder="Search by period or status..."
-        />
-      )}
-    </div>
+    </>
   );
 }

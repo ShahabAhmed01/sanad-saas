@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
-import { CheckCircle, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { InlineEdit } from "@/components/ui/inline-edit";
+import { toast } from "sonner";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface ExamSchedule {
   id: string;
@@ -26,113 +32,130 @@ interface StudentMark {
   is_absent: boolean;
 }
 
+async function fetchSchedules(schoolId: string): Promise<ExamSchedule[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("exam_subject_schedule")
+    .select("id, max_marks, passing_marks, exams!inner(name), subjects!inner(name), classes!inner(name)")
+    .eq("school_id", schoolId);
+  return (data || []).map((s: { id: string; max_marks: number; passing_marks: number; exams: { name: string }[]; subjects: { name: string }[]; classes: { name: string }[] }) => ({
+    id: s.id,
+    exam_name: s.exams[0]?.name || "",
+    subject_name: s.subjects[0]?.name || "",
+    class_name: s.classes[0]?.name || "",
+    max_marks: s.max_marks,
+    passing_marks: s.passing_marks,
+  }));
+}
+
+async function fetchStudentsAndMarks(selectedSchedule: string): Promise<StudentMark[]> {
+  const supabase = createClient();
+  const { data: studentsData } = await supabase
+    .from("students")
+    .select("id, full_name")
+    .eq("status", "active")
+    .order("full_name");
+
+  const { data: existingMarks } = await supabase
+    .from("marks")
+    .select("student_id, marks_obtained, is_absent")
+    .eq("exam_subject_schedule_id", selectedSchedule);
+
+  const marksMap: Record<string, { marks: string; absent: boolean }> = {};
+  (existingMarks || []).forEach((m) => {
+    marksMap[m.student_id] = {
+      marks: m.marks_obtained?.toString() || "",
+      absent: m.is_absent,
+    };
+  });
+
+  return (studentsData || []).map((s) => ({
+    student_id: s.id,
+    student_name: s.full_name,
+    marks_obtained: marksMap[s.id]?.marks || "",
+    is_absent: marksMap[s.id]?.absent || false,
+  }));
+}
+
 export default function MarksEntryPage() {
-  const [schedules, setSchedules] = useState<ExamSchedule[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<string>("");
-  const [students, setStudents] = useState<StudentMark[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [overrides, setOverrides] = useState<Record<string, Partial<StudentMark>>>({});
   const [saved, setSaved] = useState(false);
+  const schoolId = useSchoolId();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    async function load() {
+  const { data: schedules = [] } = useQuery({
+    queryKey: queryKeys.school.gradebook(schoolId),
+    queryFn: () => fetchSchedules(schoolId),
+    enabled: !!schoolId,
+  });
+
+  const { data: loadedStudents, isLoading: loading } = useQuery({
+    queryKey: queryKeys.school.gradebook(schoolId).concat("marks", selectedSchedule),
+    queryFn: () => fetchStudentsAndMarks(selectedSchedule),
+    enabled: !!selectedSchedule,
+  });
+
+  const students = (loadedStudents || []).map((s) => ({
+    ...s,
+    ...(overrides[s.student_id] || {}),
+  }));
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("exam_subject_schedule")
-        .select("id, max_marks, passing_marks, exams!inner(name), subjects!inner(name), classes!inner(name)");
-      setSchedules((data || []).map((s: { id: string; max_marks: number; passing_marks: number; exams: { name: string }[]; subjects: { name: string }[]; classes: { name: string }[] }) => ({
-        id: s.id,
-        exam_name: s.exams[0]?.name || "",
-        subject_name: s.subjects[0]?.name || "",
-        class_name: s.classes[0]?.name || "",
-        max_marks: s.max_marks,
-        passing_marks: s.passing_marks,
-      })));
-    }
-    load();
-  }, []);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
 
-  useEffect(() => {
-    if (!selectedSchedule) return;
-    async function loadStudents() {
-      setLoading(true);
-      const supabase = createClient();
-      const schedule = schedules.find((s) => s.id === selectedSchedule);
-      if (!schedule) { setLoading(false); return; }
+      const records = students
+        .filter((s) => s.marks_obtained !== "" || s.is_absent)
+        .map((s) => ({
+          exam_subject_schedule_id: selectedSchedule,
+          student_id: s.student_id,
+          marks_obtained: s.is_absent ? null : parseFloat(s.marks_obtained),
+          is_absent: s.is_absent,
+          entered_by: user.id,
+        }));
 
-      const { data: studentsData } = await supabase
-        .from("students")
-        .select("id, full_name")
-        .eq("status", "active")
-        .order("full_name");
-
-      const { data: existingMarks } = await supabase
+      const { error } = await supabase
         .from("marks")
-        .select("student_id, marks_obtained, is_absent")
-        .eq("exam_subject_schedule_id", selectedSchedule);
+        .upsert(records, { onConflict: "exam_subject_schedule_id,student_id" });
 
-      const marksMap: Record<string, { marks: string; absent: boolean }> = {};
-      (existingMarks || []).forEach((m) => {
-        marksMap[m.student_id] = {
-          marks: m.marks_obtained?.toString() || "",
-          absent: m.is_absent,
-        };
+      if (error) throw error;
+      return records;
+    },
+    onSuccess: (records) => {
+      toast.success("Marks saved", { description: `${records.length} student marks recorded` });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.school.gradebook(schoolId).concat("marks", selectedSchedule),
       });
-
-      setStudents((studentsData || []).map((s) => ({
-        student_id: s.id,
-        student_name: s.full_name,
-        marks_obtained: marksMap[s.id]?.marks || "",
-        is_absent: marksMap[s.id]?.absent || false,
-      })));
-      setLoading(false);
-    }
-    loadStudents();
-  }, [selectedSchedule, schedules]);
+    },
+    onError: (error) => {
+      toast.error("Failed to save marks", { description: error.message });
+    },
+  });
 
   function updateMark(studentId: string, field: "marks_obtained" | "is_absent", value: string | boolean) {
-    setStudents((prev) =>
-      prev.map((s) =>
-        s.student_id === studentId ? { ...s, [field]: value } : s
-      )
-    );
-  }
-
-  async function saveMarks() {
-    setSaving(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const records = students
-      .filter((s) => s.marks_obtained !== "" || s.is_absent)
-      .map((s) => ({
-        exam_subject_schedule_id: selectedSchedule,
-        student_id: s.student_id,
-        marks_obtained: s.is_absent ? null : parseFloat(s.marks_obtained),
-        is_absent: s.is_absent,
-        entered_by: user.id,
-      }));
-
-    await supabase
-      .from("marks")
-      .upsert(records, { onConflict: "exam_subject_schedule_id,student_id" });
-
-    setSaved(true);
-    setSaving(false);
-    setTimeout(() => setSaved(false), 2000);
+    setOverrides((prev) => ({
+      ...prev,
+      [studentId]: { ...(prev[studentId] || {}), [field]: value },
+    }));
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Gradebook" }, { label: "Enter Marks" }]} />
+      <div className="space-y-6">
       <PageHeader
         title="Marks Entry"
         description="Enter marks for an exam subject"
         action={
           selectedSchedule && students.length > 0 ? (
-            <Button onClick={saveMarks} disabled={saving} className={cn("text-white", saved ? "bg-success" : "bg-accent hover:bg-accent/90")}>
+            <Button onClick={() => saveMutation.mutate()} isLoading={saveMutation.isPending} className={cn("text-white", saved ? "bg-success" : "bg-accent hover:bg-accent/90")}>
               <Save className="h-4 w-4 mr-2" />
-              {saving ? "Saving..." : saved ? "Saved!" : "Save Marks"}
+              {saved ? "Saved!" : "Save Marks"}
             </Button>
           ) : undefined
         }
@@ -140,19 +163,15 @@ export default function MarksEntryPage() {
 
       <Card className="border-slate-light max-w-lg">
         <CardContent className="p-4">
-          <Label className="text-ink">Select Exam Subject</Label>
-          <select
+          <Label htmlFor="exam-subject" className="text-ink">Select Exam Subject</Label>
+          <Select
+            id="exam-subject"
             value={selectedSchedule}
             onChange={(e) => setSelectedSchedule(e.target.value)}
             className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink"
-          >
-            <option value="">Choose exam subject...</option>
-            {schedules.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.exam_name} — {s.subject_name} ({s.class_name}) [Max: {s.max_marks}]
-              </option>
-            ))}
-          </select>
+            placeholder="Choose exam subject..."
+            options={schedules.map((s) => ({ value: s.id, label: `${s.exam_name} — ${s.subject_name} (${s.class_name}) [Max: ${s.max_marks}]` }))}
+          />
         </CardContent>
       </Card>
 
@@ -168,13 +187,14 @@ export default function MarksEntryPage() {
                 {s.student_name.charAt(0)}
               </div>
               <span className="text-sm font-medium text-ink flex-1 truncate">{s.student_name}</span>
-              <Input
-                type="number"
+              <InlineEdit
                 value={s.marks_obtained}
-                onChange={(e) => updateMark(s.student_id, "marks_obtained", e.target.value)}
+                onSave={(val) => updateMark(s.student_id, "marks_obtained", String(val))}
+                type="number"
                 className="w-20 text-center"
                 placeholder="—"
-                disabled={s.is_absent}
+                min={0}
+                max={schedules.find((sc) => sc.id === selectedSchedule)?.max_marks || 100}
               />
               <label className="flex items-center gap-1 text-xs text-slate">
                 <input
@@ -190,5 +210,6 @@ export default function MarksEntryPage() {
         </div>
       ) : null}
     </div>
+    </>
   );
 }

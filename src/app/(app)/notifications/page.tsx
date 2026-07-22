@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Bell, Check, CheckCheck } from "lucide-react";
+import { AlertCircle, Bell, Check, CheckCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { toast } from "sonner";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface Notification {
   id: string;
@@ -26,50 +30,90 @@ const typeIcons: Record<string, string> = {
   system: "⚙️",
 };
 
+async function fetchNotifications(schoolId: string): Promise<Notification[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("school_id", schoolId)
+    .order("created_at", { ascending: false });
+  return data || [];
+}
+
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const schoolId = useSchoolId();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    async function loadNotifications() {
+  const { data: notifications = [], isLoading: loading, error } = useQuery({
+    queryKey: queryKeys.school.notifications(schoolId),
+    queryFn: () => fetchNotifications(schoolId),
+    enabled: !!schoolId,
+  });
+
+  const markAsReadMutation = useMutation({
+    mutationFn: async (id: string) => {
       const supabase = createClient();
-      const { data } = await supabase
+      const { error } = await supabase
         .from("notifications")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .update({ is_read: true })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.school.notifications(schoolId) });
 
-      setNotifications(data || []);
-      setLoading(false);
-    }
-    loadNotifications();
-  }, []);
+      const previous = queryClient.getQueryData(queryKeys.school.notifications(schoolId));
 
-  async function markAsRead(id: string) {
-    const supabase = createClient();
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("id", id);
+      queryClient.setQueryData(queryKeys.school.notifications(schoolId), (old: Notification[] | undefined) =>
+        (old || []).map(n => n.id === id ? { ...n, is_read: true } : n)
+      );
 
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
-    );
-  }
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      queryClient.setQueryData(queryKeys.school.notifications(schoolId), context?.previous);
+      toast.error("Failed to mark notification as read");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.school.notifications(schoolId) });
+    },
+  });
 
-  async function markAllAsRead() {
-    const supabase = createClient();
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("is_read", false);
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("is_read", false);
+      if (error) throw error;
+    },
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.school.notifications(schoolId) });
 
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-  }
+      const previous = queryClient.getQueryData(queryKeys.school.notifications(schoolId));
+
+      queryClient.setQueryData(queryKeys.school.notifications(schoolId), (old: Notification[] | undefined) =>
+        (old || []).map(n => ({ ...n, is_read: true }))
+      );
+
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      queryClient.setQueryData(queryKeys.school.notifications(schoolId), context?.previous);
+      toast.error("Failed to mark all notifications as read");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.school.notifications(schoolId) });
+    },
+  });
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Notifications" }]} />
+      <div className="space-y-6">
       <PageHeader
         title="Notifications"
         description={
@@ -77,7 +121,7 @@ export default function NotificationsPage() {
         }
         action={
           unreadCount > 0 ? (
-            <Button variant="outline" onClick={markAllAsRead}>
+            <Button variant="outline" onClick={() => markAllAsReadMutation.mutate()}>
               <CheckCheck className="h-4 w-4 mr-2" />
               Mark all as read
             </Button>
@@ -85,7 +129,13 @@ export default function NotificationsPage() {
         }
       />
 
-      {loading ? (
+      {error ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <AlertCircle className="h-10 w-10 text-danger mb-3" />
+          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-xs text-slate mt-1">{error.message}</p>
+        </div>
+      ) : loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-16 bg-paper-raised rounded-lg animate-skeleton" />
@@ -127,8 +177,8 @@ export default function NotificationsPage() {
               </div>
               {!notification.is_read && (
                 <button
-                  onClick={() => markAsRead(notification.id)}
-                  className="text-slate hover:text-accent transition-colors"
+                  onClick={() => markAsReadMutation.mutate(notification.id)}
+                  className="text-slate hover:text-accent hover:bg-muted rounded-lg p-1.5 transition-colors"
                   title="Mark as read"
                 >
                   <Check className="h-4 w-4" />
@@ -139,5 +189,6 @@ export default function NotificationsPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

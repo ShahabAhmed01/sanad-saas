@@ -11,6 +11,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 
 const moreItems = [
   { label: "Exams", href: "/exams", icon: ClipboardList },
@@ -23,7 +24,9 @@ const moreItems = [
 export default function MorePage() {
   const router = useRouter();
   return (
-    <div className="space-y-4">
+    <>
+      <Breadcrumbs items={[{ label: "More" }]} />
+      <div className="space-y-4">
       <h1 className="font-display text-2xl font-bold text-ink">More</h1>
 
       <div className="space-y-2">
@@ -56,5 +59,6 @@ export default function MorePage() {
         </button>
       </div>
     </div>
+    </>
   );
 }

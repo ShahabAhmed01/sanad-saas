@@ -1,20 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
-import { Check, X, Clock, Save } from "lucide-react";
-import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { AlertCircle, Check, X, Clock, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface Student {
-  id: string;
-  full_name: string;
-  admission_number: string;
-}
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { toast } from "sonner";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface Section {
   id: string;
@@ -32,110 +30,107 @@ const statusConfig: Record<AttendanceStatus, { icon: React.ElementType; color: s
   leave: { icon: Clock, color: "text-slate", bg: "bg-slate/10 border-slate", label: "Leave" },
 };
 
+async function fetchSections(schoolId: string): Promise<Section[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("sections")
+    .select("id, name, classes!inner(name)")
+    .eq("classes.school_id", schoolId)
+    .order("name");
+  return (data || []).map((s: { id: string; name: string; classes: { name: string }[] }) => ({
+    id: s.id,
+    name: s.name,
+    class_name: s.classes[0]?.name || "",
+  }));
+}
+
+async function fetchStudentsAndAttendance(sectionId: string, date: string) {
+  const supabase = createClient();
+  const { data: students } = await supabase
+    .from("students")
+    .select("id, full_name, admission_number")
+    .eq("section_id", sectionId)
+    .eq("status", "active")
+    .order("full_name");
+
+  const { data: existing } = await supabase
+    .from("student_attendance")
+    .select("student_id, status")
+    .eq("section_id", sectionId)
+    .eq("date", date);
+
+  const existingMap: Record<string, AttendanceStatus> = {};
+  (existing || []).forEach((e) => {
+    existingMap[e.student_id] = e.status as AttendanceStatus;
+  });
+
+  const defaultAttendance: Record<string, AttendanceStatus> = {};
+  (students || []).forEach((s) => {
+    defaultAttendance[s.id] = existingMap[s.id] || "present";
+  });
+
+  return { students: students || [], attendance: defaultAttendance };
+}
+
 export default function MarkAttendancePage() {
-  const router = useRouter();
-  const [sections, setSections] = useState<Section[]>([]);
   const [selectedSection, setSelectedSection] = useState<string>("");
-  const [students, setStudents] = useState<Student[]>([]);
-  const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [overrides, setOverrides] = useState<Record<string, AttendanceStatus>>({});
   const [saved, setSaved] = useState(false);
+  const schoolId = useSchoolId();
+  const queryClient = useQueryClient();
   const today = new Date().toISOString().split("T")[0];
 
-  useEffect(() => {
-    async function loadSections() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: staff } = await supabase
-        .from("staff")
-        .select("school_id")
-        .eq("id", user.id)
-        .single();
-      if (!staff) return;
+  const { data: sections = [], error: sectionsError } = useQuery({
+    queryKey: queryKeys.school.attendance(schoolId, "sections"),
+    queryFn: () => fetchSections(schoolId),
+    enabled: !!schoolId,
+  });
 
-      const { data } = await supabase
-        .from("sections")
-        .select("id, name, classes!inner(name)")
-        .eq("classes.school_id", staff.school_id)
-        .order("name");
-      setSections((data || []).map((s: { id: string; name: string; classes: { name: string }[] }) => ({
-        id: s.id,
-        name: s.name,
-        class_name: s.classes[0]?.name || "",
-      })));
-    }
-    loadSections();
-  }, []);
+  const { data: studentData, isLoading: loading, error: studentDataError } = useQuery({
+    queryKey: queryKeys.school.attendance(schoolId, `${selectedSection}-${today}`),
+    queryFn: () => fetchStudentsAndAttendance(selectedSection, today),
+    enabled: !!selectedSection,
+  });
 
-  useEffect(() => {
-    if (!selectedSection) return;
-    async function loadStudents() {
-      setLoading(true);
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("students")
-        .select("id, full_name, admission_number")
-        .eq("section_id", selectedSection)
-        .eq("status", "active")
-        .order("full_name");
-
-      // Check existing attendance for today
-      const { data: existing } = await supabase
-        .from("student_attendance")
-        .select("student_id, status")
-        .eq("section_id", selectedSection)
-        .eq("date", today);
-
-      const existingMap: Record<string, AttendanceStatus> = {};
-      (existing || []).forEach((e) => {
-        existingMap[e.student_id] = e.status as AttendanceStatus;
-      });
-
-      // Default all to present, override with existing
-      const defaultAttendance: Record<string, AttendanceStatus> = {};
-      (data || []).forEach((s) => {
-        defaultAttendance[s.id] = existingMap[s.id] || "present";
-      });
-
-      setStudents(data || []);
-      setAttendance(defaultAttendance);
-      setLoading(false);
-    }
-    loadStudents();
-  }, [selectedSection, today]);
+  const students = studentData?.students || [];
+  const attendance = { ...studentData?.attendance, ...overrides };
 
   function toggleStatus(studentId: string, status: AttendanceStatus) {
-    setAttendance((prev) => ({ ...prev, [studentId]: status }));
+    setOverrides((prev) => ({ ...prev, [studentId]: status }));
   }
 
-  async function saveAttendance() {
-    setSaving(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
 
-    const records = Object.entries(attendance).map(([studentId, status]) => ({
-      student_id: studentId,
-      section_id: selectedSection,
-      date: today,
-      status,
-      marked_by: user.id,
-      school_id: "", // Will be resolved by RLS
-    }));
+      const records = Object.entries(attendance).map(([studentId, status]) => ({
+        student_id: studentId,
+        section_id: selectedSection,
+        date: today,
+        status,
+        marked_by: user.id,
+        school_id: schoolId,
+      }));
 
-    // Upsert attendance records
-    const { error } = await supabase
-      .from("student_attendance")
-      .upsert(records, { onConflict: "student_id,date" });
+      const { error } = await supabase
+        .from("student_attendance")
+        .upsert(records, { onConflict: "student_id,date" });
 
-    if (!error) {
+      if (error) throw error;
+      return records;
+    },
+    onSuccess: () => {
       setSaved(true);
+      toast.success("Attendance saved", { description: `Records updated for ${students.length} students` });
       setTimeout(() => setSaved(false), 2000);
-    }
-    setSaving(false);
-  }
+      queryClient.invalidateQueries({ queryKey: queryKeys.school.attendance(schoolId, `${selectedSection}-${today}`) });
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to save attendance", { description: error.message || "Please try again" });
+    },
+  });
 
   const stats = {
     total: students.length,
@@ -145,43 +140,62 @@ export default function MarkAttendancePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Attendance", href: "/attendance" }, { label: "Mark Attendance" }]} />
+      <div className="space-y-6">
       <PageHeader
         title="Mark Attendance"
         description={new Date().toLocaleDateString("en-PK", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
         action={
           selectedSection && students.length > 0 ? (
-            <Button
-              onClick={saveAttendance}
-              disabled={saving}
-              className={cn(
-                "text-white",
-                saved ? "bg-success" : "bg-accent hover:bg-accent/90"
-              )}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? "Saving..." : saved ? "Saved!" : "Save Attendance"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const allPresent: Record<string, AttendanceStatus> = {};
+                  students.forEach((s) => { allPresent[s.id] = "present"; });
+                  setOverrides(allPresent);
+                  toast.success("Marked all present", { description: `${students.length} students set to present` });
+                }}
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Mark All Present
+              </Button>
+              <Button
+                onClick={() => saveMutation.mutate()}
+                isLoading={saveMutation.isPending}
+                className={cn(
+                  "text-white",
+                  saved ? "bg-success" : "bg-accent hover:bg-accent/90"
+                )}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {saved ? "Saved!" : "Save Attendance"}
+              </Button>
+            </div>
           ) : undefined
         }
       />
+
+      {(sectionsError || studentDataError) && (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <AlertCircle className="h-10 w-10 text-danger mb-3" />
+          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-xs text-slate mt-1">{(sectionsError || studentDataError)?.message}</p>
+        </div>
+      )}
 
       {/* Section Selector */}
       <Card className="border-slate-light">
         <CardContent className="p-4">
           <label className="text-sm font-medium text-ink block mb-2">Select Class & Section</label>
-          <select
+          <Select
             value={selectedSection}
             onChange={(e) => setSelectedSection(e.target.value)}
             className="flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink"
-          >
-            <option value="">Choose a section...</option>
-            {sections.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.class_name} — {s.name}
-              </option>
-            ))}
-          </select>
+            placeholder="Choose a section..."
+            options={sections.map((s) => ({ value: s.id, label: `${s.class_name} — ${s.name}` }))}
+          />
         </CardContent>
       </Card>
 
@@ -224,8 +238,6 @@ export default function MarkAttendancePage() {
         <div className="space-y-2">
           {students.map((student) => {
             const currentStatus = attendance[student.id] || "present";
-            const config = statusConfig[currentStatus];
-            const Icon = config.icon;
             return (
               <div
                 key={student.id}
@@ -268,5 +280,6 @@ export default function MarkAttendancePage() {
         </div>
       ) : null}
     </div>
+    </>
   );
 }

@@ -8,7 +8,6 @@ import {
   CheckCircle,
   Building2,
   Users,
-  GraduationCap,
   Palette,
   ArrowRight,
   ArrowLeft,
@@ -53,8 +52,6 @@ export function OnboardingWizard() {
   const updateData = (partial: Partial<WizardData>) => {
     setData((prev) => ({ ...prev, ...partial }));
   };
-
-  const progress = (step / steps.length) * 100;
 
   return (
     <div className="min-h-screen bg-paper flex items-center justify-center p-4">
@@ -217,6 +214,7 @@ export function OnboardingWizard() {
                         ? "border-accent bg-accent/5 shadow-md"
                         : "border-border hover:border-muted-foreground/30"
                     )}
+                    aria-pressed={data.primaryColor === theme.color}
                   >
                     <div
                       className="w-12 h-12 rounded-full mb-2 shadow-sm"
@@ -285,23 +283,27 @@ export function OnboardingWizard() {
             ) : (
               <Button
                 onClick={async () => {
-                  const { createClient } = await import("@/lib/supabase/client");
-                  const supabase = createClient();
-                  const { data: { user } } = await supabase.auth.getUser();
-                  if (user) {
-                    const { data: staff } = await supabase
-                      .from("staff")
-                      .select("school_id")
-                      .eq("id", user.id)
-                      .single();
-                    if (staff) {
-                      await supabase
-                        .from("schools")
-                        .update({ name: data.schoolName, city: data.city, board_type: data.boardType })
-                        .eq("id", staff.school_id);
+                  try {
+                    const { createClient } = await import("@/lib/supabase/client");
+                    const supabase = createClient();
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                      const { data: staff } = await supabase
+                        .from("staff")
+                        .select("school_id")
+                        .eq("id", user.id)
+                        .single();
+                      if (staff) {
+                        await supabase
+                          .from("schools")
+                          .update({ name: data.schoolName, city: data.city, board_type: data.boardType })
+                          .eq("id", staff.school_id);
+                      }
                     }
+                    window.location.href = "/dashboard";
+                  } catch {
+                    window.location.href = "/dashboard";
                   }
-                  window.location.href = "/dashboard";
                 }}
                 className="bg-accent hover:bg-accent/90 text-white"
               >

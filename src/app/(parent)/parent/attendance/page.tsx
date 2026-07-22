@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { CalendarCheck } from "lucide-react";
+import { AlertCircle, CalendarCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 interface AttendanceRecord {
   id: string;
@@ -21,51 +22,61 @@ const statusColors: Record<string, string> = {
   leave: "text-slate",
 };
 
+async function fetchAttendance(childId: string | null): Promise<AttendanceRecord[]> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  let studentId = childId;
+
+  if (!studentId) {
+    const { data: guardian } = await supabase
+      .from("guardians")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .single();
+
+    if (!guardian) return [];
+
+    const { data: sgList } = await supabase
+      .from("student_guardians")
+      .select("student_id")
+      .eq("guardian_id", guardian.id)
+      .limit(1);
+
+    if (!sgList || sgList.length === 0) return [];
+    studentId = sgList[0].student_id;
+  }
+
+  const { data } = await supabase
+    .from("student_attendance")
+    .select("id, date, status")
+    .eq("student_id", studentId)
+    .order("date", { ascending: false })
+    .limit(30);
+
+  return data || [];
+}
+
 function ParentAttendanceContent() {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const childId = searchParams.get("child");
 
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  const { data: records = [], isLoading: loading, error } = useQuery<AttendanceRecord[]>({
+    queryKey: ["parent-attendance", childId],
+    queryFn: () => fetchAttendance(childId),
+    enabled: !!childId,
+  });
 
-      let studentId = childId;
-
-      if (!studentId) {
-        const { data: guardian } = await supabase
-          .from("guardians")
-          .select("id")
-          .eq("auth_user_id", user.id)
-          .single();
-
-        if (!guardian) { setLoading(false); return; }
-
-        const { data: sgList } = await supabase
-          .from("student_guardians")
-          .select("student_id")
-          .eq("guardian_id", guardian.id)
-          .limit(1);
-
-        if (!sgList || sgList.length === 0) { setLoading(false); return; }
-        studentId = sgList[0].student_id;
-      }
-
-      const { data } = await supabase
-        .from("student_attendance")
-        .select("id, date, status")
-        .eq("student_id", studentId)
-        .order("date", { ascending: false })
-        .limit(30);
-
-      setRecords(data || []);
-      setLoading(false);
-    }
-    load();
-  }, [childId]);
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-xs text-slate mt-1">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

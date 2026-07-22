@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, Copy, ExternalLink } from "lucide-react";
+import { CheckCircle, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 export default function SetupPage() {
   const [step, setStep] = useState(1);
@@ -24,14 +25,17 @@ export default function SetupPage() {
       const data = await res.json();
       if (data.tablesExist) {
         setStatus(`Tables verified! Found ${data.tables?.length || 0} tables.`);
+        toast.success("Tables verified", { description: `Found ${data.tables?.length || 0} tables.` });
         setStep(2);
       } else {
         setError(
           "Tables not found. Please run the SQL migrations first."
         );
+        toast.error("Tables not found", { description: "Please run the SQL migrations first." });
       }
-    } catch (e) {
+    } catch {
       setError("Failed to check tables. Is the app running?");
+      toast.error("Failed to check tables", { description: "Is the app running?" });
     }
     setLoading(false);
   }
@@ -48,12 +52,15 @@ export default function SetupPage() {
       const data = await res.json();
       if (data.plansExist && data.plans?.length > 0) {
         setStatus(`Plans verified! ${data.plans.length} plans found.`);
+        toast.success("Plans verified", { description: `${data.plans.length} plans found.` });
         setStep(3);
       } else {
         setError("Plans not found. Please run 003_seed_plans.sql");
+        toast.error("Plans not found", { description: "Please run 003_seed_plans.sql" });
       }
-    } catch (e) {
+    } catch {
       setError("Failed to check plans");
+      toast.error("Failed to check plans");
     }
     setLoading(false);
   }
@@ -77,15 +84,18 @@ export default function SetupPage() {
       const data = await res.json();
       if (data.success) {
         setStatus("Platform admin created! Redirecting to login...");
+        toast.success("Platform admin created", { description: "Redirecting to login..." });
         setStep(4);
         setTimeout(() => {
           window.location.href = "/login";
         }, 2000);
       } else {
         setError(data.error || "Failed to create admin");
+        toast.error("Failed to create admin", { description: data.error || "Please try again" });
       }
-    } catch (e) {
+    } catch {
       setError("Failed to create admin");
+      toast.error("Failed to create admin", { description: "An unexpected error occurred" });
     }
     setLoading(false);
   }
@@ -161,7 +171,7 @@ export default function SetupPage() {
                   Open your Supabase SQL Editor and run these 3 files:
                 </p>
                 <a
-                  href="https://supabase.com/dashboard/project/frxfrehusnvpggxrtwom/sql/new"
+                  href="https://supabase.com/dashboard/project/_/sql/new"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-sm text-accent hover:text-accent-ink mb-3"
@@ -196,10 +206,10 @@ export default function SetupPage() {
 
               <Button
                 onClick={checkTables}
-                disabled={loading}
+                isLoading={loading}
                 className="w-full bg-accent hover:bg-accent/90 text-white"
               >
-                {loading ? "Checking..." : "I've run the migrations — check"}
+                I&apos;ve run the migrations — check
               </Button>
             </div>
           )}
@@ -212,10 +222,10 @@ export default function SetupPage() {
               </p>
               <Button
                 onClick={checkPlans}
-                disabled={loading}
+                isLoading={loading}
                 className="w-full bg-accent hover:bg-accent/90 text-white"
               >
-                {loading ? "Verifying..." : "Verify plans exist"}
+                Verify plans exist
               </Button>
             </div>
           )}
@@ -267,10 +277,10 @@ export default function SetupPage() {
               </div>
               <Button
                 type="submit"
-                disabled={loading}
+                isLoading={loading}
                 className="w-full bg-accent hover:bg-accent/90 text-white"
               >
-                {loading ? "Creating..." : "Create platform admin"}
+                Create platform admin
               </Button>
             </form>
           )}

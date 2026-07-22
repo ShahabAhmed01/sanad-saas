@@ -6,9 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   gregorianToHijri,
   hijriMonths,
-  formatPakistaniDate,
   isHoliday,
-  urduDays,
 } from "@/lib/calendar";
 
 interface PakistaniCalendarProps {

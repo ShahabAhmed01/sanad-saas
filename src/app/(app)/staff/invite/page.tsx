@@ -6,9 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@/lib/supabase/client";
+import { Select } from "@/components/ui/select";
 import { inviteStaff } from "@/lib/actions/auth";
 import { CheckCircle, Mail } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 const roles = [
   { value: "teacher", label: "Teacher" },
@@ -22,62 +27,48 @@ const roles = [
 ];
 
 export default function InviteStaffPage() {
+  const queryClient = useQueryClient();
+  const schoolId = useSchoolId();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("teacher");
-  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [tempPassword, setTempPassword] = useState("");
   const [error, setError] = useState("");
 
-  async function handleInvite() {
-    if (!name || !email || !role) return;
-    setLoading(true);
-    setError("");
-
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError("Not authenticated");
-        setLoading(false);
-        return;
-      }
-
-      const { data: staff } = await supabase
-        .from("staff")
-        .select("school_id")
-        .eq("id", user.id)
-        .single();
-
-      if (!staff) {
-        setError("Staff record not found");
-        setLoading(false);
-        return;
-      }
-
+  const inviteMutation = useMutation({
+    mutationFn: async () => {
       const result = await inviteStaff({
         email,
         name,
         role,
-        schoolId: staff.school_id,
+        schoolId,
       });
+      if (result.error) throw new Error(result.error);
+      return result;
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.school.staff(schoolId) });
+      setTempPassword(result.temporaryPassword || "");
+      toast.success("Invitation sent", { description: `${name} invited as ${roles.find(r => r.value === role)?.label}` });
+      setSuccess(true);
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+      toast.error("Invitation failed", { description: err.message });
+    },
+  });
 
-      if (result.error) {
-        setError(result.error);
-      } else {
-        setTempPassword(result.temporaryPassword || "");
-        setSuccess(true);
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to send invitation");
-    }
-
-    setLoading(false);
+  function handleInvite() {
+    if (!name || !email || !role) return;
+    setError("");
+    inviteMutation.mutate();
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Staff", href: "/staff" }, { label: "Invite Staff" }]} />
+      <div className="space-y-6">
       <PageHeader title="Invite Staff" description="Send an invitation to a new staff member" />
 
       {success ? (
@@ -110,32 +101,32 @@ export default function InviteStaffPage() {
               <div className="bg-danger/10 text-danger text-sm p-3 rounded-lg">{error}</div>
             )}
             <div>
-              <Label className="text-ink">Full Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Muhammad Ali" className="mt-1.5" />
+              <Label htmlFor="full-name" className="text-ink">Full Name</Label>
+              <Input id="full-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Muhammad Ali" className="mt-1.5" />
             </div>
             <div>
-              <Label className="text-ink">Email</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="teacher@school.edu.pk" className="mt-1.5" />
+              <Label htmlFor="email" className="text-ink">Email</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="teacher@school.edu.pk" className="mt-1.5" />
             </div>
             <div>
-              <Label className="text-ink">Role</Label>
-              <select
+              <Label htmlFor="role" className="text-ink">Role</Label>
+              <Select
+                id="role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink"
-              >
-                {roles.map((r) => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
-                ))}
-              </select>
+                placeholder={roles.find((r) => r.value === role)?.label || "Select role..."}
+                options={roles}
+              />
             </div>
-            <Button onClick={handleInvite} disabled={loading || !name || !email} className="w-full bg-accent hover:bg-accent/90 text-white">
+            <Button onClick={handleInvite} disabled={!name || !email} isLoading={inviteMutation.isPending} className="w-full bg-accent hover:bg-accent/90 text-white">
               <Mail className="h-4 w-4 mr-2" />
-              {loading ? "Sending..." : "Send Invitation"}
+              Send Invitation
             </Button>
           </CardContent>
         </Card>
       )}
     </div>
+    </>
   );
 }

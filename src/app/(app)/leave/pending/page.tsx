@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
-import { CheckCircle, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface LeaveRequest {
   id: string;
@@ -19,35 +23,56 @@ interface LeaveRequest {
 }
 
 export default function PendingLeavePage() {
-  const [requests, setRequests] = useState<LeaveRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const schoolId = useSchoolId();
 
-  useEffect(() => {
-    async function load() {
+  const { data: requests = [], isLoading: loading, error } = useQuery<LeaveRequest[]>({
+    queryKey: [...queryKeys.school.leave(schoolId), "pending"],
+    queryFn: async () => {
       const supabase = createClient();
       const { data } = await supabase
         .from("leave_requests")
         .select("*, staff!inner(full_name, role)")
         .eq("status", "pending")
         .order("created_at", { ascending: false });
-      setRequests(data as LeaveRequest[] || []);
-      setLoading(false);
-    }
-    load();
-  }, []);
+      return (data as LeaveRequest[]) || [];
+    },
+    enabled: !!schoolId,
+  });
 
-  async function handleDecision(id: string, status: "approved" | "rejected") {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase
-      .from("leave_requests")
-      .update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() })
-      .eq("id", id);
-    setRequests((prev) => prev.filter((r) => r.id !== id));
+  const decisionMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "approved" | "rejected" }) => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("leave_requests")
+        .update({ status, reviewed_by: user?.id, reviewed_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, variables) => {
+      toast.success(`Leave ${variables.status}`, { description: `Request has been ${variables.status}` });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.school.leave(schoolId), "pending"] });
+    },
+    onError: (_error, variables) => {
+      toast.error(`Failed to ${variables.status} leave`, { description: "Please try again" });
+    },
+  });
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-xs text-slate mt-1">{error.message}</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Leave", href: "/leave" }, { label: "Pending Approvals" }]} />
+      <div className="space-y-6">
       <PageHeader title="Pending Leave Requests" description="Review and approve/reject staff leave requests" />
 
       {loading ? (
@@ -76,10 +101,10 @@ export default function PendingLeavePage() {
                     {req.reason && <p className="text-xs text-slate mt-1">{req.reason}</p>}
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={() => handleDecision(req.id, "approved")} className="bg-success hover:bg-success/90 text-white">
+                    <Button size="sm" onClick={() => decisionMutation.mutate({ id: req.id, status: "approved" })} className="bg-success hover:bg-success/90 text-white">
                       <CheckCircle className="h-4 w-4 mr-1" /> Approve
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleDecision(req.id, "rejected")} className="text-danger border-danger hover:bg-danger/10">
+                    <Button size="sm" variant="outline" onClick={() => decisionMutation.mutate({ id: req.id, status: "rejected" })} className="text-danger border-danger hover:bg-danger/10">
                       <XCircle className="h-4 w-4 mr-1" /> Reject
                     </Button>
                   </div>
@@ -90,5 +115,6 @@ export default function PendingLeavePage() {
         </div>
       )}
     </div>
+    </>
   );
 }

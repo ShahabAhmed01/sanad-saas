@@ -1,13 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
-import { CheckCircle, Bus, Plus } from "lucide-react";
+import { AlertCircle, CheckCircle, Bus } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface Route {
   id: string;
@@ -22,23 +28,24 @@ interface Student {
 }
 
 export default function TransportAssignPage() {
-  const [routes, setRoutes] = useState<Route[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [selectedRoute, setSelectedRoute] = useState("");
   const [pickupStop, setPickupStop] = useState("");
-  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
+  const queryClient = useQueryClient();
+  const schoolId = useSchoolId();
 
-  useEffect(() => {
-    async function load() {
+  const { data: routes = [], error } = useQuery<Route[]>({
+    queryKey: queryKeys.school.transport(schoolId),
+    queryFn: async () => {
       const supabase = createClient();
       const { data } = await supabase.from("transport_routes").select("id, name, fare_amount").order("name");
-      setRoutes(data || []);
-    }
-    load();
-  }, []);
+      return data || [];
+    },
+    enabled: !!schoolId,
+  });
 
   async function searchStudents() {
     if (!search) return;
@@ -51,38 +58,57 @@ export default function TransportAssignPage() {
     setStudents(data || []);
   }
 
-  async function assignStudent() {
-    if (!selectedStudent || !selectedRoute) return;
-    setLoading(true);
-    const supabase = createClient();
+  const assignMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedStudent || !selectedRoute) return;
+      const supabase = createClient();
 
-    const { data: existing } = await supabase
-      .from("student_transport")
-      .select("id")
-      .eq("student_id", selectedStudent.id)
-      .maybeSingle();
+      const { data: existing } = await supabase
+        .from("student_transport")
+        .select("id")
+        .eq("student_id", selectedStudent.id)
+        .maybeSingle();
 
-    if (existing) {
-      setSuccess(`${selectedStudent.full_name} already assigned to a route — updating...`);
+      if (existing) {
+        setSuccess(`${selectedStudent.full_name} already assigned to a route — updating...`);
+        setTimeout(() => setSuccess(""), 2000);
+      }
+
+      await supabase.from("student_transport").upsert({
+        student_id: selectedStudent.id,
+        route_id: selectedRoute,
+        pickup_stop: pickupStop || null,
+      });
+    },
+    onSuccess: () => {
+      if (!selectedStudent) return;
+      toast.success("Route assigned", { description: `${selectedStudent.full_name} assigned to transport route` });
+      setSuccess(`${selectedStudent.full_name} assigned to route`);
+      setSelectedStudent(null);
+      setSearch("");
+      setPickupStop("");
+      queryClient.invalidateQueries({ queryKey: queryKeys.school.transport(schoolId) });
       setTimeout(() => setSuccess(""), 2000);
-    }
+    },
+    onError: (error) => {
+      toast.error("Failed to assign student", { description: error.message });
+    },
+  });
 
-    await supabase.from("student_transport").upsert({
-      student_id: selectedStudent.id,
-      route_id: selectedRoute,
-      pickup_stop: pickupStop || null,
-    });
-
-    setSuccess(`${selectedStudent.full_name} assigned to route`);
-    setSelectedStudent(null);
-    setSearch("");
-    setPickupStop("");
-    setLoading(false);
-    setTimeout(() => setSuccess(""), 2000);
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-xs text-slate mt-1">{error.message}</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Transport", href: "/transport" }, { label: "Assign Route" }]} />
+      <div className="space-y-6">
       <PageHeader title="Transport Assignment" description="Assign students to transport routes" />
 
       {success && (
@@ -122,26 +148,22 @@ export default function TransportAssignPage() {
           </div>
 
           <div>
-            <Label className="text-ink">Route</Label>
-            <select value={selectedRoute} onChange={(e) => setSelectedRoute(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink">
-              <option value="">Select route...</option>
-              {routes.map((r) => (
-                <option key={r.id} value={r.id}>{r.name} (PKR {Number(r.fare_amount).toLocaleString()}/mo)</option>
-              ))}
-            </select>
+            <Label htmlFor="route" className="text-ink">Route</Label>
+            <Select id="route" value={selectedRoute} onChange={(e) => setSelectedRoute(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder="Select route..." options={routes.map((r) => ({ value: r.id, label: `${r.name} (PKR ${Number(r.fare_amount).toLocaleString()}/mo)` }))} />
           </div>
 
           <div>
-            <Label className="text-ink">Pickup Stop</Label>
-            <Input value={pickupStop} onChange={(e) => setPickupStop(e.target.value)} placeholder="e.g. Main Road Stop" className="mt-1.5" />
+            <Label htmlFor="pickup-stop" className="text-ink">Pickup Stop</Label>
+            <Input id="pickup-stop" value={pickupStop} onChange={(e) => setPickupStop(e.target.value)} placeholder="e.g. Main Road Stop" className="mt-1.5" />
           </div>
 
-          <Button onClick={assignStudent} disabled={loading || !selectedStudent || !selectedRoute} className="w-full bg-accent hover:bg-accent/90 text-white">
+          <Button onClick={() => assignMutation.mutate()} isLoading={assignMutation.isPending} disabled={!selectedStudent || !selectedRoute} className="w-full bg-accent hover:bg-accent/90 text-white">
             <Bus className="h-4 w-4 mr-2" />
-            {loading ? "Assigning..." : "Assign to Route"}
+            Assign to Route
           </Button>
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

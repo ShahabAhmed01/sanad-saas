@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { createClient } from "@/lib/supabase/client";
-import { Shield } from "lucide-react";
+import { AlertCircle, Shield } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { useQuery } from "@tanstack/react-query";
+import { useSchoolId } from "@/hooks/use-user-profile";
 
 interface AuditLog {
   id: string;
@@ -18,22 +20,34 @@ interface AuditLog {
 }
 
 export default function AuditLogPage() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const schoolId = useSchoolId();
 
-  useEffect(() => {
-    async function load() {
+  const { data: logs = [], isLoading: loading, error } = useQuery<AuditLog[], Error>({
+    queryKey: ["audit-logs", schoolId],
+    queryFn: async () => {
       const supabase = createClient();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("audit_logs")
         .select("*")
+        .eq("school_id", schoolId)
         .order("created_at", { ascending: false })
         .limit(100);
-      setLogs(data || []);
-      setLoading(false);
-    }
-    load();
-  }, []);
+
+      if (error) throw new Error(error.message);
+      return data || [];
+    },
+    enabled: !!schoolId,
+  });
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-xs text-slate mt-1">{error.message}</p>
+      </div>
+    );
+  }
 
   const columns = [
     { key: "actor_name", header: "Actor" },
@@ -48,7 +62,9 @@ export default function AuditLogPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Audit Log" }]} />
+      <div className="space-y-6">
       <PageHeader title="Audit Log" description="Track all significant actions across the school" />
 
       {loading ? (
@@ -70,5 +86,6 @@ export default function AuditLogPage() {
         />
       )}
     </div>
+    </>
   );
 }

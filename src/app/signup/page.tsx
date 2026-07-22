@@ -6,12 +6,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { signupSchool, type SignupInput } from "@/lib/actions/auth";
+import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function SignupPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,9 +36,14 @@ export default function SignupPage() {
 
     if (result.error) {
       setError(result.error);
+      toast.error("Signup failed", { description: result.error });
       setLoading(false);
       return;
     }
+
+    toast.success("Account created!", {
+      description: "Welcome to Sanad. Redirecting to your dashboard...",
+    });
 
     if ("needsLogin" in result && result.needsLogin) {
       router.push("/login?registered=true");
@@ -60,7 +69,7 @@ export default function SignupPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-paper-raised rounded-xl border border-slate-light p-8">
+        <div className="bg-paper-raised rounded-xl border border-slate-light p-8 shadow-sm">
           <h1 className="font-display text-xl font-semibold text-ink mb-1">
             Start your free trial
           </h1>
@@ -85,6 +94,7 @@ export default function SignupPage() {
                 placeholder="Al-Noor Academy"
                 className="mt-1.5"
                 required
+                autoComplete="organization"
               />
             </div>
             <div>
@@ -97,6 +107,7 @@ export default function SignupPage() {
                 placeholder="Muhammad Ahmed"
                 className="mt-1.5"
                 required
+                autoComplete="name"
               />
             </div>
             <div>
@@ -110,40 +121,56 @@ export default function SignupPage() {
                 placeholder="admin@school.edu.pk"
                 className="mt-1.5"
                 required
+                autoComplete="email"
               />
             </div>
             <div>
               <Label htmlFor="password" className="text-ink">
                 Password
               </Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Min. 8 characters"
-                className="mt-1.5"
-                required
-                minLength={8}
-              />
+              <div className="relative mt-1.5">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Min. 8 characters"
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
             <div>
               <Label htmlFor="board-type" className="text-ink">
                 Board / Curriculum
               </Label>
-              <select
+              <Select
                 id="board-type"
                 name="board-type"
-                className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="mt-1.5"
+                placeholder="Select your board"
                 required
-              >
-                <option value="">Select your board</option>
-                <option value="matric_fsc">Matric / FSc</option>
-                <option value="cambridge_o_a_level">
-                  Cambridge O / A Level
-                </option>
-                <option value="montessori">Montessori</option>
-                <option value="mixed">Mixed / Other</option>
-              </select>
+                options={[
+                  { value: "matric_fsc", label: "Matric / FSc" },
+                  { value: "cambridge_o_a_level", label: "Cambridge O / A Level" },
+                  { value: "montessori", label: "Montessori" },
+                  { value: "mixed", label: "Mixed / Other" },
+                ]}
+              />
             </div>
             <div>
               <Label htmlFor="city" className="text-ink">
@@ -155,16 +182,17 @@ export default function SignupPage() {
                 placeholder="Lahore"
                 className="mt-1.5"
                 required
+                autoComplete="address-level2"
               />
             </div>
             <div className="flex items-start gap-2">
               <input
                 type="checkbox"
                 id="terms"
-                className="mt-1 rounded border-slate-light"
+                className="mt-1 rounded border-slate-light h-4 w-4 accent-accent"
                 required
               />
-              <label htmlFor="terms" className="text-xs text-slate">
+              <label htmlFor="terms" className="text-xs text-slate leading-relaxed">
                 I agree to the{" "}
                 <Link
                   href="/terms"
@@ -183,10 +211,14 @@ export default function SignupPage() {
             </div>
             <Button
               type="submit"
-              className="w-full bg-accent hover:bg-accent/90 text-white"
-              disabled={loading}
+              className="w-full bg-accent hover:bg-accent/90 text-white h-11"
+              isLoading={loading}
             >
-              {loading ? "Creating account..." : "Create my school account"}
+              {loading ? (
+                "Creating account..."
+              ) : (
+                "Create my school account"
+              )}
             </Button>
           </form>
         </div>

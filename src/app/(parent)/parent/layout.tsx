@@ -12,9 +12,13 @@ import {
   Bell,
   LogOut,
   ChevronDown,
+  Loader2,
 } from "lucide-react";
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { PageTransition } from "@/components/page-transition";
+import { toast } from "sonner";
 
 const parentNav = [
   { label: "Dashboard", href: "/parent", icon: LayoutDashboard, shortLabel: "Home" },
@@ -38,48 +42,51 @@ function ParentLayoutInner({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [childSelectorOpen, setChildSelectorOpen] = useState(false);
-  const [children_, setChildren] = useState<Child[]>([]);
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
 
-  useEffect(() => {
-    async function loadChildren() {
+  const { data: children_ = [], isLoading, error } = useQuery<Child[]>({
+    queryKey: ["parent", "children"],
+    queryFn: async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) throw new Error("Not authenticated");
 
-      // Get guardian record
       const { data: guardian } = await supabase
         .from("guardians")
         .select("id")
         .eq("auth_user_id", user.id)
         .single();
 
-      if (!guardian) return;
+      if (!guardian) throw new Error("No guardian profile found");
 
-      // Get children linked to this guardian
       const { data: links } = await supabase
         .from("student_guardians")
         .select("student_id, students(id, full_name)")
         .eq("guardian_id", guardian.id);
 
-      if (links) {
-        const childList = links.map((l) => l.students as unknown as Child);
-        setChildren(childList);
-        const childIdFromUrl = searchParams.get("child");
-        if (childIdFromUrl) {
-          const found = childList.find((c) => c.id === childIdFromUrl);
-          if (found) setSelectedChild(found);
-        } else if (childList.length > 0) {
-          setSelectedChild(childList[0]);
-        }
+      if (!links || links.length === 0) {
+        throw new Error("No children are linked to your account. Please contact your school administrator.");
       }
-    }
-    loadChildren();
-  }, []);
+
+      return links.map((l) => l.students as unknown as Child);
+    },
+  });
+
+  // Compute initial child from URL params or default to first child
+  const childIdFromUrl = searchParams.get("child");
+  const initialChild = children_.length > 0
+    ? (childIdFromUrl ? children_.find((c) => c.id === childIdFromUrl) || children_[0] : children_[0])
+    : null;
+
+  // Sync selected child when data loads (avoids useEffect setState lint error)
+  if (initialChild && !selectedChild) {
+    setSelectedChild(initialChild);
+  }
 
   function handleLogout() {
     const supabase = createClient();
     supabase.auth.signOut();
+    toast.success("Logged out successfully");
     window.location.href = "/login";
   }
 
@@ -102,6 +109,8 @@ function ParentLayoutInner({
             <button
               onClick={() => setChildSelectorOpen(!childSelectorOpen)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-muted hover:bg-muted/80 transition-colors"
+              aria-label="Select child"
+              aria-expanded={childSelectorOpen}
             >
               <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center">
                 <span className="text-xs font-bold text-accent">
@@ -147,6 +156,7 @@ function ParentLayoutInner({
           <button
             onClick={handleLogout}
             className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+            aria-label="Log out"
           >
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">Logout</span>
@@ -181,7 +191,23 @@ function ParentLayoutInner({
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6 pb-24 sm:pb-6">{children}</div>
+      <div className="max-w-4xl mx-auto px-4 py-6 pb-24 sm:pb-6">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin mb-3" />
+            <p className="text-sm">Loading your children...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-3">
+              <span className="text-destructive text-lg font-bold">!</span>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-xs">{error.message}</p>
+          </div>
+        ) : (
+          <PageTransition>{children}</PageTransition>
+        )}
+      </div>
 
       {/* Mobile Bottom Navigation */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-bottom">
@@ -196,7 +222,7 @@ function ParentLayoutInner({
                 href={item.href}
                 className={cn(
                   "flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[48px]",
-                  isActive ? "text-accent" : "text-muted-foreground"
+                  isActive ? "text-accent" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
               >
                 <item.icon className="h-5 w-5" />

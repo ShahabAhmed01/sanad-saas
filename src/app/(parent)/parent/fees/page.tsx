@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Banknote } from "lucide-react";
+import { AlertCircle, Banknote } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 interface FeeInvoice {
   id: string;
@@ -23,50 +24,60 @@ const statusColors: Record<string, string> = {
   overdue: "bg-danger/10 text-danger",
 };
 
+async function fetchFees(childId: string | null): Promise<FeeInvoice[]> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  let studentId = childId;
+
+  if (!studentId) {
+    const { data: guardian } = await supabase
+      .from("guardians")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .single();
+
+    if (!guardian) return [];
+
+    const { data: sgList } = await supabase
+      .from("student_guardians")
+      .select("student_id")
+      .eq("guardian_id", guardian.id)
+      .limit(1);
+
+    if (!sgList || sgList.length === 0) return [];
+    studentId = sgList[0].student_id;
+  }
+
+  const { data } = await supabase
+    .from("fee_invoices")
+    .select("id, period_label, total_amount, status, due_date")
+    .eq("student_id", studentId)
+    .order("due_date", { ascending: false });
+
+  return data || [];
+}
+
 function ParentFeesContent() {
-  const [invoices, setInvoices] = useState<FeeInvoice[]>([]);
-  const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const childId = searchParams.get("child");
 
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  const { data: invoices = [], isLoading: loading, error } = useQuery<FeeInvoice[]>({
+    queryKey: ["parent-fees", childId],
+    queryFn: () => fetchFees(childId),
+    enabled: !!childId,
+  });
 
-      let studentId = childId;
-
-      if (!studentId) {
-        const { data: guardian } = await supabase
-          .from("guardians")
-          .select("id")
-          .eq("auth_user_id", user.id)
-          .single();
-
-        if (!guardian) { setLoading(false); return; }
-
-        const { data: sgList } = await supabase
-          .from("student_guardians")
-          .select("student_id")
-          .eq("guardian_id", guardian.id)
-          .limit(1);
-
-        if (!sgList || sgList.length === 0) { setLoading(false); return; }
-        studentId = sgList[0].student_id;
-      }
-
-      const { data } = await supabase
-        .from("fee_invoices")
-        .select("id, period_label, total_amount, status, due_date")
-        .eq("student_id", studentId)
-        .order("due_date", { ascending: false });
-
-      setInvoices(data || []);
-      setLoading(false);
-    }
-    load();
-  }, [childId]);
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-xs text-slate mt-1">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

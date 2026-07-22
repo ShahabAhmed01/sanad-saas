@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-import { CheckCircle, Wallet } from "lucide-react";
+import { AlertCircle, Wallet } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { toast } from "sonner";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface StaffPayroll {
   id: string;
@@ -30,24 +35,50 @@ interface StaffSalary {
   deductions: number;
 }
 
+interface StaffMember {
+  id: string;
+  full_name: string;
+  role: string;
+}
+
+async function fetchStaff(schoolId: string): Promise<StaffMember[]> {
+  const supabase = createClient();
+  const { data } = await supabase.from("staff").select("id, full_name, role").eq("school_id", schoolId).eq("status", "active");
+  return (data || []) as StaffMember[];
+}
+
+async function fetchPayroll(schoolId: string): Promise<StaffPayroll[]> {
+  const supabase = createClient();
+  const { data } = await supabase.from("payroll").select("*").eq("school_id", schoolId).order("created_at", { ascending: false }).limit(50);
+  return data || [];
+}
+
 export default function PayrollPage() {
-  const [staffSalaries, setStaffSalaries] = useState<StaffSalary[]>([]);
-  const [payroll, setPayroll] = useState<StaffPayroll[]>([]);
-  const [loading, setLoading] = useState(true);
+  const schoolId = useSchoolId();
+  const queryClient = useQueryClient();
   const [period, setPeriod] = useState("");
-  const [processing, setProcessing] = useState(false);
+  const [staffSalaries, setStaffSalaries] = useState<StaffSalary[]>([]);
 
+  const { data: staffList = [], isLoading: staffLoading, error: staffError } = useQuery({
+    queryKey: queryKeys.school.staff(schoolId),
+    queryFn: () => fetchStaff(schoolId),
+    enabled: !!schoolId,
+  });
+
+  const { data: payroll = [], isLoading: payrollLoading, error: payrollError } = useQuery({
+    queryKey: queryKeys.school.payroll(schoolId),
+    queryFn: () => fetchPayroll(schoolId),
+    enabled: !!schoolId,
+  });
+
+  const loading = staffLoading || payrollLoading;
+
+  const initializedRef = useRef(false);
   useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const [staffRes, payrollRes] = await Promise.all([
-        supabase.from("staff").select("id, full_name, role").eq("status", "active"),
-        supabase.from("payroll").select("*").order("created_at", { ascending: false }).limit(50),
-      ]);
-
-      const staffList = staffRes.data || [];
+    if (!initializedRef.current && staffList.length > 0) {
+      initializedRef.current = true;
       setStaffSalaries(
-        staffList.map((s) => ({
+        staffList.map((s: StaffMember) => ({
           staff_id: s.id,
           full_name: s.full_name,
           role: s.role,
@@ -56,11 +87,39 @@ export default function PayrollPage() {
           deductions: 0,
         }))
       );
-      setPayroll(payrollRes.data || []);
-      setLoading(false);
     }
-    load();
-  }, []);
+  }, [staffList]);
+
+  const processPayrollMutation = useMutation({
+    mutationFn: async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      for (const s of staffSalaries) {
+        const net = s.basic_salary + s.allowances - s.deductions;
+        if (net <= 0) continue;
+
+        await supabase.from("payroll").insert({
+          school_id: schoolId,
+          staff_id: s.staff_id,
+          period_label: period,
+          basic_salary: s.basic_salary,
+          allowances: s.allowances,
+          deductions: s.deductions,
+          net_salary: net,
+          status: "pending",
+          processed_by: user?.id,
+        });
+      }
+    },
+    onSuccess: () => {
+      toast.success("Payroll processed", { description: `Salaries processed for ${staffSalaries.length} staff members` });
+      queryClient.invalidateQueries({ queryKey: queryKeys.school.payroll(schoolId) });
+    },
+    onError: (error) => {
+      toast.error("Failed to process payroll", { description: error.message });
+    },
+  });
 
   function updateSalary(staffId: string, field: keyof StaffSalary, value: number) {
     setStaffSalaries((prev) =>
@@ -68,35 +127,10 @@ export default function PayrollPage() {
     );
   }
 
-  async function processPayroll() {
-    if (!period || staffSalaries.length === 0) return;
-    setProcessing(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    for (const s of staffSalaries) {
-      const net = s.basic_salary + s.allowances - s.deductions;
-      if (net <= 0) continue;
-
-      await supabase.from("payroll").insert({
-        staff_id: s.staff_id,
-        period_label: period,
-        basic_salary: s.basic_salary,
-        allowances: s.allowances,
-        deductions: s.deductions,
-        net_salary: net,
-        status: "pending",
-        processed_by: user?.id,
-      });
-    }
-
-    setProcessing(false);
-    const { data } = await supabase.from("payroll").select("*").order("created_at", { ascending: false }).limit(50);
-    setPayroll(data || []);
-  }
-
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Payroll" }]} />
+      <div className="space-y-6">
       <PageHeader
         title="Payroll"
         description="Process and manage staff salaries"
@@ -108,15 +142,23 @@ export default function PayrollPage() {
               placeholder="e.g. July 2026"
               className="w-40"
             />
-            <Button onClick={processPayroll} disabled={processing || !period || staffSalaries.length === 0} className="bg-accent hover:bg-accent/90 text-white">
+            <Button onClick={() => processPayrollMutation.mutate()} isLoading={processPayrollMutation.isPending} disabled={!period || staffSalaries.length === 0} className="bg-accent hover:bg-accent/90 text-white">
               <Wallet className="h-4 w-4 mr-2" />
-              {processing ? "Processing..." : "Process Payroll"}
+              Process Payroll
             </Button>
           </div>
         }
       />
 
-      {loading ? (
+      {(staffError || payrollError) && (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <AlertCircle className="h-10 w-10 text-danger mb-3" />
+          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-xs text-slate mt-1">{(staffError || payrollError)?.message}</p>
+        </div>
+      )}
+
+      {!staffError && !payrollError && loading ? (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-paper-raised rounded-lg animate-skeleton" />)}
         </div>
@@ -134,8 +176,9 @@ export default function PayrollPage() {
                     <p className="text-xs text-slate capitalize">{s.role}</p>
                   </div>
                   <div>
-                    <Label className="text-xs text-slate">Basic Salary</Label>
+                    <Label htmlFor={`basic-salary-${s.staff_id}`} className="text-xs text-slate">Basic Salary</Label>
                     <Input
+                      id={`basic-salary-${s.staff_id}`}
                       type="number"
                       value={s.basic_salary || ""}
                       onChange={(e) => updateSalary(s.staff_id, "basic_salary", Number(e.target.value) || 0)}
@@ -144,8 +187,9 @@ export default function PayrollPage() {
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-slate">Allowances</Label>
+                    <Label htmlFor={`allowances-${s.staff_id}`} className="text-xs text-slate">Allowances</Label>
                     <Input
+                      id={`allowances-${s.staff_id}`}
                       type="number"
                       value={s.allowances || ""}
                       onChange={(e) => updateSalary(s.staff_id, "allowances", Number(e.target.value) || 0)}
@@ -154,8 +198,9 @@ export default function PayrollPage() {
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-slate">Deductions</Label>
+                    <Label htmlFor={`deductions-${s.staff_id}`} className="text-xs text-slate">Deductions</Label>
                     <Input
+                      id={`deductions-${s.staff_id}`}
                       type="number"
                       value={s.deductions || ""}
                       onChange={(e) => updateSalary(s.staff_id, "deductions", Number(e.target.value) || 0)}
@@ -203,5 +248,6 @@ export default function PayrollPage() {
         </Card>
       )}
     </div>
+    </>
   );
 }

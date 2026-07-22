@@ -1,10 +1,22 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+const SETUP_TOKEN = process.env.SETUP_TOKEN;
+
 export async function POST(request: Request) {
   const admin = createAdminClient();
 
-  const { action, email, password, fullName } = await request.json();
+  const { action, email, password, fullName, token } = await request.json();
+
+  // Auth guard: require setup token for admin creation
+  if (action === "create-admin") {
+    if (!SETUP_TOKEN || token !== SETUP_TOKEN) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+  }
 
   switch (action) {
     case "create-admin": {
@@ -42,7 +54,7 @@ export async function POST(request: Request) {
 
     case "check-tables": {
       // Check if tables exist by querying a known table
-      const { data, error } = await admin
+      const { error } = await admin
         .from("schools")
         .select("id")
         .limit(1);

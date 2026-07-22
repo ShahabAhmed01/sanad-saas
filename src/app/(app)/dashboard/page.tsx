@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   Users,
   GraduationCap,
@@ -14,211 +13,46 @@ import {
   FileText,
   CalendarDays,
   AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-
-interface DashboardStats {
-  totalStudents: number;
-  totalStaff: number;
-  todayAttendance: number;
-  totalFeeCollection: number;
-  pendingFees: number;
-  activeStudents: number;
-}
-
-interface RecentActivity {
-  id: string;
-  type: "student" | "fee" | "attendance" | "announcement";
-  title: string;
-  description: string;
-  time: string;
-}
-
-interface UpcomingEvent {
-  id: string;
-  type: "exam" | "fee" | "announcement";
-  title: string;
-  date: string;
-}
-
-function formatDateShort(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Tomorrow";
-  if (diffDays <= 7) return `In ${diffDays} days`;
-  try {
-    return date.toLocaleDateString("en-PK", { month: "short", day: "numeric" });
-  } catch {
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  }
-}
-
-function getTimeAgo(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (seconds < 60) return "Just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return "Yesterday";
-  return `${days}d ago`;
-}
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  Legend,
+} from "recharts";
+import { useDashboardData } from "@/hooks/use-dashboard-data";
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats>({
+  const { data, isLoading, error } = useDashboardData();
+
+  const stats = data?.stats || {
     totalStudents: 0,
     totalStaff: 0,
     todayAttendance: 0,
     totalFeeCollection: 0,
     pendingFees: 0,
     activeStudents: 0,
-  });
-  const [activities, setActivities] = useState<RecentActivity[]>([]);
-  const [upcoming, setUpcoming] = useState<UpcomingEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [schoolName, setSchoolName] = useState("");
-
-  useEffect(() => {
-    async function loadDashboard() {
-      const supabase = createClient();
-
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Get school info
-      const { data: staff } = await supabase
-        .from("staff")
-        .select("school_id, schools(name)")
-        .eq("id", user.id)
-        .single();
-
-      if (!staff) return;
-      const schoolId = staff.school_id;
-      const schoolData = Array.isArray(staff.schools) ? (staff.schools as { name: string }[])[0] : null;
-      setSchoolName(schoolData?.name || "Your School");
-
-      // Parallel fetch all stats
-      const [studentsRes, staffRes, feesRes, attendanceRes, pendingFeesRes] = await Promise.all([
-        supabase.from("students").select("id", { count: "exact", head: true }).eq("school_id", schoolId),
-        supabase.from("staff").select("id", { count: "exact", head: true }).eq("school_id", schoolId),
-        supabase.from("fee_payments").select("amount", { count: "exact" }).eq("school_id", schoolId),
-        supabase.from("student_attendance").select("id", { count: "exact", head: true })
-          .eq("school_id", schoolId)
-          .eq("date", new Date().toISOString().split("T")[0]),
-        supabase.from("fee_invoices").select("id", { count: "exact", head: true })
-          .eq("school_id", schoolId)
-          .eq("status", "unpaid"),
-      ]);
-
-      // Calculate total fee collection
-      const totalCollection = (feesRes.data || []).reduce(
-        (sum, p) => sum + Number(p.amount || 0),
-        0
-      );
-
-      setStats({
-        totalStudents: studentsRes.count || 0,
-        totalStaff: staffRes.count || 0,
-        todayAttendance: attendanceRes.count || 0,
-        totalFeeCollection: totalCollection,
-        pendingFees: pendingFeesRes.count || 0,
-        activeStudents: studentsRes.count || 0,
-      });
-
-      // Load recent activity from audit_logs
-      const { data: auditLogs } = await supabase
-        .from("audit_logs")
-        .select("id, action, entity_type, entity_id, created_at")
-        .eq("school_id", schoolId)
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      if (auditLogs && auditLogs.length > 0) {
-        const mapped: RecentActivity[] = auditLogs.map((log) => {
-          const actionMap: Record<string, { type: RecentActivity["type"]; title: string }> = {
-            create: { type: "student", title: "Record created" },
-            update: { type: "student", title: "Record updated" },
-            delete: { type: "student", title: "Record deleted" },
-            fee_payment: { type: "fee", title: "Fee payment recorded" },
-            attendance_mark: { type: "attendance", title: "Attendance marked" },
-            exam_create: { type: "announcement", title: "Exam created" },
-            marks_entry: { type: "announcement", title: "Marks entered" },
-          };
-          const mapped_action = actionMap[log.action] || { type: "student" as const, title: log.action };
-          const timeAgo = getTimeAgo(log.created_at);
-          return {
-            id: log.id,
-            type: mapped_action.type,
-            title: mapped_action.title,
-            description: `${log.entity_type || "System"} activity`,
-            time: timeAgo,
-          };
-        });
-        setActivities(mapped);
-      }
-
-      // Load upcoming events from exams and announcements
-      const today = new Date().toISOString().split("T")[0];
-      const [examsRes, announcementsRes] = await Promise.all([
-        supabase
-          .from("exams")
-          .select("id, name, starts_on, ends_on, status")
-          .eq("school_id", schoolId)
-          .gte("ends_on", today)
-          .order("starts_on", { ascending: true })
-          .limit(3),
-        supabase
-          .from("announcements")
-          .select("id, title, created_at")
-          .eq("school_id", schoolId)
-          .order("created_at", { ascending: false })
-          .limit(3),
-      ]);
-
-      const upcomingEvents: UpcomingEvent[] = [];
-
-      if (examsRes.data) {
-        for (const exam of examsRes.data) {
-          upcomingEvents.push({
-            id: exam.id,
-            type: "exam",
-            title: exam.name,
-            date: formatDateShort(exam.starts_on),
-          });
-        }
-      }
-
-      if (announcementsRes.data) {
-        for (const ann of announcementsRes.data) {
-          upcomingEvents.push({
-            id: ann.id,
-            type: "announcement",
-            title: ann.title,
-            date: getTimeAgo(ann.created_at),
-          });
-        }
-      }
-
-      setUpcoming(upcomingEvents.slice(0, 3));
-
-      setLoading(false);
-    }
-    loadDashboard();
-  }, []);
+  };
+  const userName = data?.userName || "";
+  const activities = data?.activities || [];
+  const upcoming = data?.upcoming || [];
+  const attendanceChart = data?.attendanceChart || [];
+  const feeChart = data?.feeChart || [];
 
   const statCards = [
     {
       title: "Total Students",
-      value: loading ? "—" : String(stats.totalStudents),
+      value: isLoading ? null : String(stats.totalStudents),
       icon: GraduationCap,
       color: "text-accent",
       bg: "bg-accent/10",
@@ -227,7 +61,7 @@ export default function DashboardPage() {
     },
     {
       title: "Total Staff",
-      value: loading ? "—" : String(stats.totalStaff),
+      value: isLoading ? null : String(stats.totalStaff),
       icon: Users,
       color: "text-success",
       bg: "bg-success/10",
@@ -236,7 +70,7 @@ export default function DashboardPage() {
     },
     {
       title: "Today's Attendance",
-      value: loading ? "—" : stats.todayAttendance > 0 ? `${stats.todayAttendance}` : "—",
+      value: isLoading ? null : stats.todayAttendance > 0 ? `${stats.todayAttendance}` : "0",
       icon: CalendarCheck,
       color: "text-accent",
       bg: "bg-accent/10",
@@ -245,7 +79,7 @@ export default function DashboardPage() {
     },
     {
       title: "Fee Collection",
-      value: loading ? "—" : stats.totalFeeCollection > 0 ? `Rs ${stats.totalFeeCollection.toLocaleString()}` : "—",
+      value: isLoading ? null : stats.totalFeeCollection > 0 ? `Rs ${stats.totalFeeCollection.toLocaleString()}` : "Rs 0",
       icon: Banknote,
       color: "text-success",
       bg: "bg-success/10",
@@ -283,7 +117,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Get greeting based on time
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -309,6 +142,16 @@ export default function DashboardPage() {
     }
   })();
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load dashboard</p>
+        <p className="text-xs text-slate mt-1">Please try refreshing the page</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Card */}
@@ -316,7 +159,7 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl md:text-3xl font-bold text-ink">
-              {getGreeting()}, {schoolName}
+              {getGreeting()}, {userName}
             </h1>
             <p className="text-slate mt-1">{today}</p>
           </div>
@@ -351,7 +194,11 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-ink tabular-nums">
-                {stat.value}
+                {stat.value === null ? (
+                  <div className="h-7 w-20 bg-muted rounded animate-skeleton" />
+                ) : (
+                  stat.value
+                )}
               </div>
               <div className="flex items-center gap-1 mt-1">
                 {stat.trendUp ? (
@@ -405,7 +252,7 @@ export default function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <div className="space-y-3">
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="flex items-center gap-3">
@@ -506,7 +353,7 @@ export default function DashboardPage() {
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mb-3">
-                  <CheckCircleIcon className="h-6 w-6 text-success" />
+                  <CheckCircle2 className="h-6 w-6 text-success" />
                 </div>
                 <p className="text-sm font-medium text-ink">All clear!</p>
                 <p className="text-xs text-slate">No pending alerts</p>
@@ -515,15 +362,105 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
 
-function CheckCircleIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" strokeLinecap="round" strokeLinejoin="round" />
-      <polyline points="22 4 12 14.01 9 11.01" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+      {/* Charts Section */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Attendance Trend */}
+        <Card className="border-slate-light">
+          <CardHeader>
+            <CardTitle className="text-lg font-display text-ink">
+              Attendance This Week
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-64 space-y-3">
+                <div className="flex items-end gap-2 h-48">
+                  {[65, 45, 80, 55, 70, 40, 60].map((h, i) => (
+                    <div key={i} className="flex-1 space-y-1">
+                      <div className="bg-muted rounded animate-skeleton" style={{ height: `${h}%` }} />
+                      <div className="bg-muted rounded animate-skeleton h-3" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : attendanceChart.length > 0 ? (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={attendanceChart} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="day" tick={{ fontSize: 12 }} className="text-slate" />
+                    <YAxis tick={{ fontSize: 12 }} className="text-slate" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "var(--color-background)",
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "0.75rem",
+                        fontSize: "0.875rem",
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="present" name="Present" fill="var(--color-success)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="absent" name="Absent" fill="var(--color-danger)" radius={[4, 4, 0, 0]} opacity={0.7} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-sm text-slate">
+                No attendance data yet
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Fee Collection Trend */}
+        <Card className="border-slate-light">
+          <CardHeader>
+            <CardTitle className="text-lg font-display text-ink">
+              Fee Collection Trend
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-64 space-y-3">
+                <div className="flex items-end gap-2 h-48">
+                  {[55, 70, 40, 65, 50, 75].map((h, i) => (
+                    <div key={i} className="flex-1 space-y-1">
+                      <div className="bg-muted rounded animate-skeleton" style={{ height: `${h}%` }} />
+                      <div className="bg-muted rounded animate-skeleton h-3" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : feeChart.length > 0 ? (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={feeChart} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} className="text-slate" />
+                    <YAxis tick={{ fontSize: 12 }} className="text-slate" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "var(--color-background)",
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "0.75rem",
+                        fontSize: "0.875rem",
+                      }}
+                      formatter={(value) => [`PKR ${Number(value).toLocaleString()}`, ""]}
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="collected" name="Collected" stroke="var(--color-accent)" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-sm text-slate">
+                No fee data yet
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

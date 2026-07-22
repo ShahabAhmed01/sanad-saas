@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Users, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface StaffMember {
   id: string;
@@ -39,40 +41,61 @@ const statusColors: Record<string, string> = {
   terminated: "bg-slate/10 text-slate",
 };
 
+async function fetchStaff(schoolId: string): Promise<StaffMember[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("staff")
+    .select("*")
+    .eq("school_id", schoolId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error("Failed to load staff");
+  return data || [];
+}
+
 export default function StaffPage() {
   const router = useRouter();
-  const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const schoolId = useSchoolId();
 
-  useEffect(() => {
-    async function loadStaff() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setError("Not authenticated"); setLoading(false); return; }
+  const { data: staff = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey: queryKeys.school.staff(schoolId),
+    queryFn: () => fetchStaff(schoolId),
+    enabled: !!schoolId,
+  });
 
-      const { data: currentStaff, error: staffErr } = await supabase
-        .from("staff")
-        .select("school_id")
-        .eq("id", user.id)
-        .single();
-      if (staffErr || !currentStaff) { setError("Failed to load school info"); setLoading(false); return; }
-
-      const { data, error: queryErr } = await supabase
-        .from("staff")
-        .select("*")
-        .eq("school_id", currentStaff.school_id)
-        .order("created_at", { ascending: false });
-
-      if (queryErr) { setError("Failed to load staff"); setLoading(false); return; }
-      setStaff(data || []);
-      setLoading(false);
-    }
-    loadStaff();
-  }, []);
+  const error = queryError ? queryError.message : null;
 
   const columns = [
-    { key: "full_name", header: "Name" },
+    { 
+      key: "full_name", 
+      header: "Name",
+      renderPreview: (item: StaffMember) => (
+        <div className="space-y-2">
+          <div>
+            <p className="font-semibold text-foreground">{item.full_name}</p>
+            <p className="text-xs text-muted-foreground">{roleLabels[item.role] || item.role}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <p className="text-muted-foreground">Phone</p>
+              <p className="font-medium">{item.phone || "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Status</p>
+              <p className="font-medium capitalize">{item.status.replace("_", " ")}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-muted-foreground">Joined</p>
+              <p className="font-medium">
+                {item.date_joined
+                  ? new Date(item.date_joined).toLocaleDateString("en-PK")
+                  : "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+      ),
+    },
     {
       key: "role",
       header: "Role",
@@ -105,7 +128,9 @@ export default function StaffPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Staff" }]} />
+      <div className="space-y-6">
       <PageHeader
         title="Staff Management"
         description="Manage your school's staff members and their roles"
@@ -148,5 +173,6 @@ export default function StaffPage() {
         />
       )}
     </div>
+    </>
   );
 }

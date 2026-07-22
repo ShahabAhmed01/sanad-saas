@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CalendarCheck, Check, X, Clock, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface AttendanceRecord {
   id: string;
@@ -17,39 +20,31 @@ interface AttendanceRecord {
   marked_by: string;
 }
 
+async function fetchAttendance(schoolId: string, date: string): Promise<AttendanceRecord[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("student_attendance")
+    .select("*")
+    .eq("date", date)
+    .eq("school_id", schoolId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error("Failed to load attendance");
+  return data || [];
+}
+
 export default function AttendancePage() {
   const router = useRouter();
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const schoolId = useSchoolId();
   const today = new Date().toISOString().split("T")[0];
 
-  useEffect(() => {
-    async function loadAttendance() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setError("Not authenticated"); setLoading(false); return; }
+  const { data: records = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey: queryKeys.school.attendance(schoolId, today),
+    queryFn: () => fetchAttendance(schoolId, today),
+    enabled: !!schoolId,
+  });
 
-      const { data: staff, error: staffErr } = await supabase
-        .from("staff")
-        .select("school_id")
-        .eq("id", user.id)
-        .single();
-      if (staffErr || !staff) { setError("Failed to load school info"); setLoading(false); return; }
-
-      const { data, error: queryErr } = await supabase
-        .from("student_attendance")
-        .select("*")
-        .eq("date", today)
-        .eq("school_id", staff.school_id)
-        .order("created_at", { ascending: false });
-
-      if (queryErr) { setError("Failed to load attendance"); setLoading(false); return; }
-      setRecords(data || []);
-      setLoading(false);
-    }
-    loadAttendance();
-  }, [today]);
+  const error = queryError ? queryError.message : null;
 
   const stats = {
     total: records.length,
@@ -59,7 +54,9 @@ export default function AttendancePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Attendance" }]} />
+      <div className="space-y-6">
       <PageHeader
         title="Attendance"
         description={`Tracking for ${new Date().toLocaleDateString("en-PK", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`}
@@ -154,5 +151,6 @@ export default function AttendancePage() {
         </Card>
       )}
     </div>
+    </>
   );
 }

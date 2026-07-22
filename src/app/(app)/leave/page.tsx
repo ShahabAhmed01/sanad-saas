@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { CalendarCheck, Plus } from "lucide-react";
+import { AlertCircle, CalendarCheck, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { useUserId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface LeaveRequest {
   id: string;
@@ -24,31 +27,30 @@ const statusColors: Record<string, string> = {
   rejected: "bg-danger/10 text-danger",
 };
 
+async function fetchLeaves(userId: string): Promise<LeaveRequest[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("leave_requests")
+    .select("*")
+    .eq("staff_id", userId)
+    .order("created_at", { ascending: false });
+  return data || [];
+}
+
 export default function LeavePage() {
   const router = useRouter();
-  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const userId = useUserId();
 
-  useEffect(() => {
-    async function loadLeaves() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data } = await supabase
-        .from("leave_requests")
-        .select("*")
-        .eq("staff_id", user.id)
-        .order("created_at", { ascending: false });
-
-      setLeaves(data || []);
-      setLoading(false);
-    }
-    loadLeaves();
-  }, []);
+  const { data: leaves = [], isLoading: loading, error } = useQuery({
+    queryKey: queryKeys.user.leaves(userId),
+    queryFn: () => fetchLeaves(userId),
+    enabled: !!userId,
+  });
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Leave Requests" }]} />
+      <div className="space-y-6">
       <PageHeader
         title="Leave Requests"
         description="Submit and track your leave requests"
@@ -60,7 +62,13 @@ export default function LeavePage() {
         }
       />
 
-      {loading ? (
+      {error ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <AlertCircle className="h-10 w-10 text-danger mb-3" />
+          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-xs text-slate mt-1">{error.message}</p>
+        </div>
+      ) : loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-20 bg-paper-raised rounded-lg animate-skeleton" />
@@ -106,5 +114,6 @@ export default function LeavePage() {
         </div>
       )}
     </div>
+    </>
   );
 }

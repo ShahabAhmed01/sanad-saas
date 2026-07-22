@@ -1,13 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
-import { Award, Printer } from "lucide-react";
+import { Award } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { toast } from "sonner";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface Student {
   id: string;
@@ -16,42 +22,57 @@ interface Student {
   section_name: string;
 }
 
+async function searchStudentsFn(schoolId: string, search: string): Promise<Student[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("students")
+    .select("id, full_name, admission_number, sections!inner(name)")
+    .or(`full_name.ilike.%${search}%,admission_number.ilike.%${search}%`)
+    .limit(10);
+  return (data || []).map((s: { id: string; full_name: string; admission_number: string; sections: { name: string }[] }) => ({
+    ...s,
+    section_name: s.sections[0]?.name || "",
+  }));
+}
+
 export default function CertificatesPage() {
   const [search, setSearch] = useState("");
-  const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [certType, setCertType] = useState("bonafide");
-  const [loading, setLoading] = useState(false);
+  const schoolId = useSchoolId();
+  const queryClient = useQueryClient();
 
-  async function searchStudents() {
-    if (!search) return;
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("students")
-      .select("id, full_name, admission_number, sections!inner(name)")
-      .or(`full_name.ilike.%${search}%,admission_number.ilike.%${search}%`)
-      .limit(10);
-    setStudents((data || []).map((s: { id: string; full_name: string; admission_number: string; sections: { name: string }[] }) => ({
-      ...s,
-      section_name: s.sections[0]?.name || "",
-    })));
-  }
+  const { data: students = [] } = useQuery({
+    queryKey: queryKeys.school.certificates(schoolId).concat("search", search),
+    queryFn: () => searchStudentsFn(schoolId, search),
+    enabled: search.length >= 2,
+  });
 
-  async function issueCertificate() {
-    if (!selectedStudent) return;
-    setLoading(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+  const issueMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedStudent) throw new Error("No student selected");
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
 
-    await supabase.from("certificates_issued").insert({
-      student_id: selectedStudent.id,
-      certificate_type: certType,
-      issued_by: user?.id,
-    });
+      const { error } = await supabase.from("certificates_issued").insert({
+        student_id: selectedStudent.id,
+        certificate_type: certType,
+        issued_by: user?.id,
+      });
 
-    setLoading(false);
-    printCertificate(selectedStudent, certType);
-  }
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Certificate issued", { description: `${certType} certificate generated for ${selectedStudent?.full_name}` });
+      printCertificate(selectedStudent!, certType);
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.school.certificates(schoolId),
+      });
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to issue certificate", { description: error.message || "Please try again" });
+    },
+  });
 
   function printCertificate(student: Student, type: string) {
     const typeLabels: Record<string, string> = {
@@ -97,7 +118,9 @@ export default function CertificatesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Certificates" }]} />
+      <div className="space-y-6">
       <PageHeader title="Certificates" description="Issue and print student certificates" />
 
       <Card className="border-slate-light max-w-lg">
@@ -106,14 +129,14 @@ export default function CertificatesPage() {
             <Input
               placeholder="Search student by name or admission number..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); if (e.target.value.length >= 2) searchStudents(); }}
+              onChange={(e) => { setSearch(e.target.value); if (e.target.value.length >= 2) searchStudentsFn(schoolId, e.target.value); }}
             />
             {students.length > 0 && (
               <div className="absolute z-10 w-full bg-paper-raised border border-slate-light rounded-lg mt-1 shadow-lg max-h-48 overflow-y-auto">
                 {students.map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => { setSelectedStudent(s); setSearch(s.full_name); setStudents([]); }}
+                    onClick={() => { setSelectedStudent(s); setSearch(s.full_name); }}
                     className="w-full text-left p-2 hover:bg-paper text-sm"
                   >
                     <span className="font-medium text-ink">{s.full_name}</span>
@@ -125,29 +148,34 @@ export default function CertificatesPage() {
           </div>
 
           <div>
-            <Label className="text-ink">Certificate Type</Label>
-            <select
+            <Label htmlFor="certificate-type" className="text-ink">Certificate Type</Label>
+            <Select
+              id="certificate-type"
               value={certType}
               onChange={(e) => setCertType(e.target.value)}
               className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink"
-            >
-              <option value="bonafide">Bonafide Certificate</option>
-              <option value="character">Character Certificate</option>
-              <option value="transfer">Transfer Certificate</option>
-              <option value="leaving">Leaving Certificate</option>
-            </select>
+              placeholder="Bonafide Certificate"
+              options={[
+                { value: "bonafide", label: "Bonafide Certificate" },
+                { value: "character", label: "Character Certificate" },
+                { value: "transfer", label: "Transfer Certificate" },
+                { value: "leaving", label: "Leaving Certificate" },
+              ]}
+            />
           </div>
 
           <Button
-            onClick={issueCertificate}
-            disabled={!selectedStudent || loading}
+            onClick={() => issueMutation.mutate()}
+            disabled={!selectedStudent}
+            isLoading={issueMutation.isPending}
             className="w-full bg-accent hover:bg-accent/90 text-white"
           >
             <Award className="h-4 w-4 mr-2" />
-            {loading ? "Issuing..." : "Issue & Print Certificate"}
+            Issue & Print Certificate
           </Button>
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

@@ -175,6 +175,7 @@ export function CommandPalette() {
               }}
               placeholder="Search commands, pages, actions..."
               className="flex-1 h-12 bg-transparent text-foreground placeholder:text-muted-foreground outline-none text-sm"
+              aria-label="Search commands"
             />
             <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-xs text-muted-foreground bg-muted rounded-md border border-border">
               ESC

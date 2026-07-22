@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ClipboardList, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface Exam {
   id: string;
@@ -25,37 +28,29 @@ const statusColors: Record<string, string> = {
   published: "bg-success/10 text-success",
 };
 
+async function fetchExams(schoolId: string): Promise<Exam[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("exams")
+    .select("*")
+    .eq("school_id", schoolId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error("Failed to load exams");
+  return data || [];
+}
+
 export default function ExamsPage() {
   const router = useRouter();
-  const [exams, setExams] = useState<Exam[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const schoolId = useSchoolId();
 
-  useEffect(() => {
-    async function loadExams() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setError("Not authenticated"); setLoading(false); return; }
+  const { data: exams = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey: queryKeys.school.exams(schoolId),
+    queryFn: () => fetchExams(schoolId),
+    enabled: !!schoolId,
+  });
 
-      const { data: staff, error: staffErr } = await supabase
-        .from("staff")
-        .select("school_id")
-        .eq("id", user.id)
-        .single();
-      if (staffErr || !staff) { setError("Failed to load school info"); setLoading(false); return; }
-
-      const { data, error: queryErr } = await supabase
-        .from("exams")
-        .select("*")
-        .eq("school_id", staff.school_id)
-        .order("created_at", { ascending: false });
-
-      if (queryErr) { setError("Failed to load exams"); setLoading(false); return; }
-      setExams(data || []);
-      setLoading(false);
-    }
-    loadExams();
-  }, []);
+  const error = queryError ? queryError.message : null;
 
   const columns = [
     { key: "name", header: "Exam Name" },
@@ -91,7 +86,9 @@ export default function ExamsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Exams" }]} />
+      <div className="space-y-6">
       <PageHeader
         title="Exams & Results"
         description="Schedule exams, manage marks, and generate report cards"
@@ -131,5 +128,6 @@ export default function ExamsPage() {
         />
       )}
     </div>
+    </>
   );
 }

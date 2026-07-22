@@ -11,3 +11,5 @@ export const localeDirections: Record<Locale, "ltr" | "rtl"> = {
   en: "ltr",
   ur: "rtl",
 };
+
+export const directionMap = localeDirections;

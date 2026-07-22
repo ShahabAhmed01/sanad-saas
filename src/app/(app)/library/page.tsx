@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { BookOpen, Plus } from "lucide-react";
+import { AlertCircle, BookOpen, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { useQuery } from "@tanstack/react-query";
+import { useSchoolId } from "@/hooks/use-user-profile";
 
 interface Book {
   id: string;
@@ -21,22 +23,33 @@ interface Book {
 
 export default function LibraryPage() {
   const router = useRouter();
-  const [books, setBooks] = useState<Book[]>([]);
-  const [loading, setLoading] = useState(true);
+  const schoolId = useSchoolId();
 
-  useEffect(() => {
-    async function loadBooks() {
+  const { data: books = [], isLoading: loading, error } = useQuery<Book[], Error>({
+    queryKey: ["library-books", schoolId],
+    queryFn: async () => {
       const supabase = createClient();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("library_books")
         .select("*")
+        .eq("school_id", schoolId)
         .order("title");
 
-      setBooks(data || []);
-      setLoading(false);
-    }
-    loadBooks();
-  }, []);
+      if (error) throw new Error(error.message);
+      return data || [];
+    },
+    enabled: !!schoolId,
+  });
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-xs text-slate mt-1">{error.message}</p>
+      </div>
+    );
+  }
 
   const columns = [
     { key: "title", header: "Title" },
@@ -66,7 +79,9 @@ export default function LibraryPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Library" }]} />
+      <div className="space-y-6">
       <PageHeader
         title="Library"
         description="Manage book catalog and issue/return transactions"
@@ -100,5 +115,6 @@ export default function LibraryPage() {
         />
       )}
     </div>
+    </>
   );
 }

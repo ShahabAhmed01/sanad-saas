@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ClipboardCheck } from "lucide-react";
+import { AlertCircle, ClipboardCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 interface MarkRecord {
   id: string;
@@ -18,58 +19,67 @@ interface MarkRecord {
   };
 }
 
+async function fetchMarks(childId: string | null): Promise<MarkRecord[]> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  let studentId = childId;
+
+  if (!studentId) {
+    const { data: guardian } = await supabase
+      .from("guardians")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .single();
+
+    if (!guardian) return [];
+
+    const { data: sgList } = await supabase
+      .from("student_guardians")
+      .select("student_id")
+      .eq("guardian_id", guardian.id)
+      .limit(1);
+
+    if (!sgList || sgList.length === 0) return [];
+    studentId = sgList[0].student_id;
+  }
+
+  const { data } = await supabase
+    .from("marks")
+    .select(`
+      id, marks_obtained, is_absent,
+      exam_subject_schedule!inner (
+        max_marks,
+        subjects!inner (name),
+        exams!inner (name, status)
+      )
+    `)
+    .eq("student_id", studentId)
+    .eq("exam_subject_schedule.exams.status", "published");
+
+  return (data as unknown as MarkRecord[]) || [];
+}
+
 function ParentMarksContent() {
-  const [marks, setMarks] = useState<MarkRecord[]>([]);
-  const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const childId = searchParams.get("child");
 
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  const { data: marks = [], isLoading: loading, error } = useQuery<MarkRecord[]>({
+    queryKey: ["parent-marks", childId],
+    queryFn: () => fetchMarks(childId),
+    enabled: !!childId,
+  });
 
-      let studentId = childId;
-
-      if (!studentId) {
-        const { data: guardian } = await supabase
-          .from("guardians")
-          .select("id")
-          .eq("auth_user_id", user.id)
-          .single();
-
-        if (!guardian) { setLoading(false); return; }
-
-        const { data: sgList } = await supabase
-          .from("student_guardians")
-          .select("student_id")
-          .eq("guardian_id", guardian.id)
-          .limit(1);
-
-        if (!sgList || sgList.length === 0) { setLoading(false); return; }
-        studentId = sgList[0].student_id;
-      }
-
-      // Only published exam marks
-      const { data } = await supabase
-        .from("marks")
-        .select(`
-          id, marks_obtained, is_absent,
-          exam_subject_schedule!inner (
-            max_marks,
-            subjects!inner (name),
-            exams!inner (name, status)
-          )
-        `)
-        .eq("student_id", studentId)
-        .eq("exam_subject_schedule.exams.status", "published");
-
-      setMarks((data as unknown as MarkRecord[]) || []);
-      setLoading(false);
-    }
-    load();
-  }, [childId]);
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-xs text-slate mt-1">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

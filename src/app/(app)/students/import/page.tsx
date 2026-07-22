@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
-import { CheckCircle, Upload, AlertTriangle } from "lucide-react";
+import { queryKeys } from "@/lib/query-keys";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { toast } from "sonner";
+import { CheckCircle, Upload } from "lucide-react";
 
 interface ImportRow {
   admission_number: string;
@@ -18,9 +22,66 @@ interface ImportRow {
 
 export default function ImportStudentsPage() {
   const [parsed, setParsed] = useState<ImportRow[]>([]);
-  const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ success: number; failed: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+  const schoolId = useSchoolId();
+
+  const importMutation = useMutation({
+    mutationFn: async (rows: ImportRow[]) => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: staff } = await supabase.from("staff").select("school_id").eq("id", user.id).single();
+      if (!staff) throw new Error("Staff profile not found");
+
+      let success = 0;
+      let failed = 0;
+
+      for (const row of rows) {
+        if (!row.full_name || !row.admission_number) {
+          failed++;
+          continue;
+        }
+
+        let sectionId = null;
+        if (row.section_name) {
+          const { data: section } = await supabase
+            .from("sections")
+            .select("id")
+            .eq("school_id", staff.school_id)
+            .ilike("name", row.section_name)
+            .single();
+          sectionId = section?.id || null;
+        }
+
+        const { error } = await supabase.from("students").insert({
+          school_id: staff.school_id,
+          admission_number: row.admission_number,
+          full_name: row.full_name,
+          gender: row.gender || null,
+          date_of_birth: row.date_of_birth || null,
+          section_id: sectionId,
+        });
+
+        if (error) failed++;
+        else success++;
+      }
+
+      return { success, failed };
+    },
+    onSuccess: (data) => {
+      setResult(data);
+      toast.success(`Imported ${data.success} students`);
+      if (schoolId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.school.students(schoolId) });
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to import students");
+    },
+  });
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -53,53 +114,6 @@ export default function ImportStudentsPage() {
       setParsed(rows.filter((r) => r.full_name));
     };
     reader.readAsText(file);
-  }
-
-  async function importStudents() {
-    setImporting(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: staff } = await supabase.from("staff").select("school_id").eq("id", user.id).single();
-    if (!staff) return;
-
-    let success = 0;
-    let failed = 0;
-
-    for (const row of parsed) {
-      if (!row.full_name || !row.admission_number) {
-        failed++;
-        continue;
-      }
-
-      // Find section
-      let sectionId = null;
-      if (row.section_name) {
-        const { data: section } = await supabase
-          .from("sections")
-          .select("id")
-          .eq("school_id", staff.school_id)
-          .ilike("name", row.section_name)
-          .single();
-        sectionId = section?.id || null;
-      }
-
-      const { error } = await supabase.from("students").insert({
-        school_id: staff.school_id,
-        admission_number: row.admission_number,
-        full_name: row.full_name,
-        gender: row.gender || null,
-        date_of_birth: row.date_of_birth || null,
-        section_id: sectionId,
-      });
-
-      if (error) failed++;
-      else success++;
-    }
-
-    setResult({ success, failed });
-    setImporting(false);
   }
 
   return (
@@ -142,8 +156,8 @@ export default function ImportStudentsPage() {
                   <p className="p-2 text-xs text-slate">...and {parsed.length - 10} more</p>
                 )}
               </div>
-              <Button onClick={importStudents} disabled={importing} className="w-full mt-4 bg-accent hover:bg-accent/90 text-white">
-                {importing ? "Importing..." : `Import ${parsed.length} Students`}
+              <Button onClick={() => importMutation.mutate(parsed)} isLoading={importMutation.isPending} className="w-full mt-4 bg-accent hover:bg-accent/90 text-white">
+                Import {parsed.length} Students
               </Button>
             </div>
           )}

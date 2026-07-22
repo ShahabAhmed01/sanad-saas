@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FileText, Plus } from "lucide-react";
+import { AlertCircle, FileText, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { useQuery } from "@tanstack/react-query";
+import { useSchoolId } from "@/hooks/use-user-profile";
 
 interface HomeworkItem {
   id: string;
@@ -20,25 +22,38 @@ interface HomeworkItem {
 
 export default function HomeworkPage() {
   const router = useRouter();
-  const [homework, setHomework] = useState<HomeworkItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const schoolId = useSchoolId();
 
-  useEffect(() => {
-    async function loadHomework() {
+  const { data: homework = [], isLoading: loading, error } = useQuery<HomeworkItem[], Error>({
+    queryKey: ["homework", schoolId],
+    queryFn: async () => {
       const supabase = createClient();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("homework")
         .select("*")
+        .eq("school_id", schoolId)
         .order("created_at", { ascending: false });
 
-      setHomework(data || []);
-      setLoading(false);
-    }
-    loadHomework();
-  }, []);
+      if (error) throw new Error(error.message);
+      return data || [];
+    },
+    enabled: !!schoolId,
+  });
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-xs text-slate mt-1">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Homework" }]} />
+      <div className="space-y-6">
       <PageHeader
         title="Homework"
         description="Manage homework assignments for your classes"
@@ -90,5 +105,6 @@ export default function HomeworkPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

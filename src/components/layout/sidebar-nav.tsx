@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { getLastVisitedPath } from "@/hooks/use-smart-defaults";
 import {
   LayoutDashboard,
   Users,
@@ -16,8 +17,6 @@ import {
   Settings,
   ClipboardCheck,
   FileText,
-  LogOut,
-  User,
 } from "lucide-react";
 
 interface NavItem {
@@ -87,6 +86,7 @@ interface SidebarNavProps {
 
 export function SidebarNav({ role = "school_admin", collapsed = false }: SidebarNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const items = roleNavItems[role] || roleNavItems.school_admin;
 
   return (
@@ -98,6 +98,17 @@ export function SidebarNav({ role = "school_admin", collapsed = false }: Sidebar
           <Link
             key={item.href}
             href={item.href}
+            onClick={(e) => {
+              const mod = item.href.split("/").filter(Boolean)[0];
+              if (mod) {
+                const lastVisited = getLastVisitedPath(mod);
+                if (lastVisited && lastVisited !== item.href && lastVisited.startsWith(item.href)) {
+                  e.preventDefault();
+                  router.push(lastVisited);
+                }
+              }
+            }}
+            aria-current={isActive ? "page" : undefined}
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
               isActive

@@ -1,13 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import { CheckCircle, BookOpen, RotateCcw } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface Book {
   id: string;
@@ -28,26 +34,38 @@ interface Transaction {
 }
 
 export default function LibraryIssueReturnPage() {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [search, setSearch] = useState("");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [borrowerName, setBorrowerName] = useState("");
   const [borrowerType, setBorrowerType] = useState("student");
   const [dueDays, setDueDays] = useState("14");
-  const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"issue" | "return">("issue");
   const [success, setSuccess] = useState("");
+  const queryClient = useQueryClient();
+  const schoolId = useSchoolId();
 
-  useEffect(() => {
-    async function load() {
+  const { data: books = [] } = useQuery<Book[]>({
+    queryKey: queryKeys.school.library(schoolId),
+    queryFn: async () => {
       const supabase = createClient();
-      const [booksRes, transRes] = await Promise.all([
-        supabase.from("library_books").select("id, title, author, available_copies").order("title"),
-        supabase.from("library_transactions").select("*, library_books!inner(title), students(full_name)").is("returned_at", null).order("issued_at", { ascending: false }),
-      ]);
-      setBooks(booksRes.data || []);
-      setTransactions((transRes.data || []).map((t: { id: string; book_id: string; issued_at: string; due_date: string; returned_at: string | null; fine_amount: number; library_books: { title: string } | null; students: { full_name: string } | null }) => ({
+      const { data } = await supabase
+        .from("library_books")
+        .select("id, title, author, available_copies")
+        .order("title");
+      return data || [];
+    },
+    enabled: !!schoolId,
+  });
+
+  const { data: transactions = [] } = useQuery<Transaction[]>({
+    queryKey: [...queryKeys.school.library(schoolId), "transactions"],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("library_transactions")
+        .select("*, library_books!inner(title), students(full_name)")
+        .is("returned_at", null)
+        .order("issued_at", { ascending: false });
+      return (data || []).map((t: { id: string; book_id: string; issued_at: string; due_date: string; returned_at: string | null; fine_amount: number; library_books: { title: string } | null; students: { full_name: string } | null }) => ({
         id: t.id,
         book_id: t.book_id,
         issued_at: t.issued_at,
@@ -56,61 +74,82 @@ export default function LibraryIssueReturnPage() {
         fine_amount: t.fine_amount,
         book_title: t.library_books?.title || "",
         borrower_name: t.students?.full_name || "Staff",
-      })));
-    }
-    load();
-  }, []);
+      }));
+    },
+    enabled: !!schoolId,
+  });
 
-  async function issueBook() {
-    if (!selectedBook || !borrowerName) return;
-    setLoading(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + parseInt(dueDays));
+  const issueMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedBook || !borrowerName) return;
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + parseInt(dueDays));
 
-    await supabase.from("library_transactions").insert({
-      book_id: selectedBook.id,
-      borrower_type: borrowerType,
-      due_date: dueDate.toISOString().split("T")[0],
-      handled_by: user?.id,
-    });
+      const { error: insertError } = await supabase.from("library_transactions").insert({
+        book_id: selectedBook.id,
+        borrower_type: borrowerType,
+        due_date: dueDate.toISOString().split("T")[0],
+        handled_by: user?.id,
+      });
+      if (insertError) throw insertError;
 
-    await supabase
-      .from("library_books")
-      .update({ available_copies: selectedBook.available_copies - 1 })
-      .eq("id", selectedBook.id);
-
-    setSuccess(`"${selectedBook.title}" issued successfully`);
-    setSelectedBook(null);
-    setBorrowerName("");
-    setLoading(false);
-    setTimeout(() => setSuccess(""), 2000);
-  }
-
-  async function returnBook(transactionId: string, bookId: string) {
-    setLoading(true);
-    const supabase = createClient();
-    await supabase
-      .from("library_transactions")
-      .update({ returned_at: new Date().toISOString().split("T")[0] })
-      .eq("id", transactionId);
-
-    const book = books.find((b) => b.id === bookId);
-    if (book) {
-      await supabase
+      const { error: updateError } = await supabase
         .from("library_books")
-        .update({ available_copies: book.available_copies + 1 })
-        .eq("id", bookId);
-    }
+        .update({ available_copies: selectedBook.available_copies - 1 })
+        .eq("id", selectedBook.id);
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      if (!selectedBook) return;
+      toast.success("Book issued", { description: `"${selectedBook.title}" issued successfully` });
+      setSuccess(`"${selectedBook.title}" issued successfully`);
+      setSelectedBook(null);
+      setBorrowerName("");
+      queryClient.invalidateQueries({ queryKey: queryKeys.school.library(schoolId) });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.school.library(schoolId), "transactions"] });
+      setTimeout(() => setSuccess(""), 2000);
+    },
+    onError: (error) => {
+      toast.error("Failed to issue book", { description: error.message });
+    },
+  });
 
-    setSuccess("Book returned successfully");
-    setLoading(false);
-    setTimeout(() => setSuccess(""), 2000);
-  }
+  const returnMutation = useMutation({
+    mutationFn: async ({ transactionId, bookId }: { transactionId: string; bookId: string }) => {
+      const supabase = createClient();
+      const { error: updateTxError } = await supabase
+        .from("library_transactions")
+        .update({ returned_at: new Date().toISOString().split("T")[0] })
+        .eq("id", transactionId);
+      if (updateTxError) throw updateTxError;
+
+      const book = books.find((b) => b.id === bookId);
+      if (book) {
+        const { error: updateBookError } = await supabase
+          .from("library_books")
+          .update({ available_copies: book.available_copies + 1 })
+          .eq("id", bookId);
+        if (updateBookError) throw updateBookError;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Book returned", { description: "Book has been returned successfully" });
+      setSuccess("Book returned successfully");
+      queryClient.invalidateQueries({ queryKey: queryKeys.school.library(schoolId) });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.school.library(schoolId), "transactions"] });
+      setTimeout(() => setSuccess(""), 2000);
+    },
+    onError: (error) => {
+      toast.error("Failed to return book", { description: error.message });
+    },
+  });
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Library", href: "/library" }, { label: "Issue / Return" }]} />
+      <div className="space-y-6">
       <PageHeader title="Library Issue / Return" description="Issue and return books" />
 
       {success && (
@@ -123,10 +162,10 @@ export default function LibraryIssueReturnPage() {
       )}
 
       <div className="flex gap-2 mb-4">
-        <Button variant={mode === "issue" ? "default" : "outline"} onClick={() => setMode("issue")} className={mode === "issue" ? "bg-accent text-white" : ""}>
+        <Button variant={mode === "issue" ? "default" : "outline"} onClick={() => setMode("issue")} className={mode === "issue" ? "bg-accent text-white hover:bg-accent/90" : ""}>
           <BookOpen className="h-4 w-4 mr-2" /> Issue Book
         </Button>
-        <Button variant={mode === "return" ? "default" : "outline"} onClick={() => setMode("return")} className={mode === "return" ? "bg-accent text-white" : ""}>
+        <Button variant={mode === "return" ? "default" : "outline"} onClick={() => setMode("return")} className={mode === "return" ? "bg-accent text-white hover:bg-accent/90" : ""}>
           <RotateCcw className="h-4 w-4 mr-2" /> Return Book
         </Button>
       </div>
@@ -138,40 +177,38 @@ export default function LibraryIssueReturnPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label className="text-ink">Select Book</Label>
-              <select
+              <Label htmlFor="select-book" className="text-ink">Select Book</Label>
+              <Select
+                id="select-book"
                 value={selectedBook?.id || ""}
                 onChange={(e) => {
                   const book = books.find((b) => b.id === e.target.value);
                   setSelectedBook(book || null);
                 }}
                 className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink"
-              >
-                <option value="">Select a book...</option>
-                {books.filter((b) => b.available_copies > 0).map((b) => (
-                  <option key={b.id} value={b.id}>{b.title} ({b.available_copies} available)</option>
-                ))}
-              </select>
+                placeholder="Select a book..."
+                options={books.filter((b) => b.available_copies > 0).map((b) => ({ value: b.id, label: `${b.title} (${b.available_copies} available)` }))}
+              />
             </div>
             <div>
-              <Label className="text-ink">Borrower Name</Label>
-              <Input value={borrowerName} onChange={(e) => setBorrowerName(e.target.value)} placeholder="Student or staff name" className="mt-1.5" />
+              <Label htmlFor="borrower-name" className="text-ink">Borrower Name</Label>
+              <Input id="borrower-name" value={borrowerName} onChange={(e) => setBorrowerName(e.target.value)} placeholder="Student or staff name" className="mt-1.5" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-ink">Type</Label>
-                <select value={borrowerType} onChange={(e) => setBorrowerType(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink">
-                  <option value="student">Student</option>
-                  <option value="staff">Staff</option>
-                </select>
+                <Label htmlFor="borrower-type" className="text-ink">Type</Label>
+                <Select id="borrower-type" value={borrowerType} onChange={(e) => setBorrowerType(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder="Student" options={[
+                  { value: "student", label: "Student" },
+                  { value: "staff", label: "Staff" },
+                ]} />
               </div>
               <div>
-                <Label className="text-ink">Due in (days)</Label>
-                <Input type="number" value={dueDays} onChange={(e) => setDueDays(e.target.value)} className="mt-1.5" />
+                <Label htmlFor="due-days" className="text-ink">Due in (days)</Label>
+                <Input id="due-days" type="number" value={dueDays} onChange={(e) => setDueDays(e.target.value)} className="mt-1.5" />
               </div>
             </div>
-            <Button onClick={issueBook} disabled={loading || !selectedBook || !borrowerName} className="w-full bg-accent hover:bg-accent/90 text-white">
-              {loading ? "Issuing..." : "Issue Book"}
+            <Button onClick={() => issueMutation.mutate()} isLoading={issueMutation.isPending} disabled={!selectedBook || !borrowerName} className="w-full bg-accent hover:bg-accent/90 text-white">
+              Issue Book
             </Button>
           </CardContent>
         </Card>
@@ -191,7 +228,7 @@ export default function LibraryIssueReturnPage() {
                     <p className="font-medium text-ink">{t.book_title}</p>
                     <p className="text-xs text-slate">Issued: {new Date(t.issued_at).toLocaleDateString("en-PK")} | Due: {new Date(t.due_date).toLocaleDateString("en-PK")}</p>
                   </div>
-                  <Button size="sm" onClick={() => returnBook(t.id, t.book_id)} className="bg-accent hover:bg-accent/90 text-white">
+                  <Button size="sm" isLoading={returnMutation.isPending} onClick={() => returnMutation.mutate({ transactionId: t.id, bookId: t.book_id })} className="bg-accent hover:bg-accent/90 text-white">
                     <RotateCcw className="h-4 w-4 mr-1" /> Return
                   </Button>
                 </CardContent>
@@ -201,5 +238,6 @@ export default function LibraryIssueReturnPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

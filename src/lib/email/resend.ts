@@ -18,7 +18,7 @@ export async function sendEmail({
   from = "Sanad <noreply@sanad.pk>",
 }: SendEmailParams) {
   if (!resend) {
-    console.log("Resend not configured — email skipped:", subject, "to", to);
+    console.warn("Resend not configured — email skipped:", subject, "to", to);
     return { success: false, error: "Resend not configured" };
   }
 

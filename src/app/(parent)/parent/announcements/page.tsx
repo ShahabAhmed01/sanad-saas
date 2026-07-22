@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Bell } from "lucide-react";
+import { AlertCircle, Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface Announcement {
   id: string;
@@ -14,36 +14,44 @@ interface Announcement {
   created_at: string;
 }
 
+async function fetchAnnouncements(): Promise<Announcement[]> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: guardian } = await supabase
+    .from("guardians")
+    .select("id, school_id")
+    .eq("auth_user_id", user.id)
+    .single();
+
+  if (!guardian) return [];
+
+  const { data } = await supabase
+    .from("announcements")
+    .select("id, title, body, audience, created_at")
+    .eq("school_id", guardian.school_id)
+    .in("audience", ["all", "parents"])
+    .order("created_at", { ascending: false });
+
+  return data || [];
+}
+
 export default function ParentAnnouncements() {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: announcements = [], isLoading: loading, error } = useQuery<Announcement[]>({
+    queryKey: ["parent-announcements"],
+    queryFn: fetchAnnouncements,
+  });
 
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: guardian } = await supabase
-        .from("guardians")
-        .select("id, school_id")
-        .eq("auth_user_id", user.id)
-        .single();
-
-      if (!guardian) { setLoading(false); return; }
-
-      const { data } = await supabase
-        .from("announcements")
-        .select("id, title, body, audience, created_at")
-        .eq("school_id", guardian.school_id)
-        .in("audience", ["all", "parents"])
-        .order("created_at", { ascending: false });
-
-      setAnnouncements(data || []);
-      setLoading(false);
-    }
-    load();
-  }, []);
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-xs text-slate mt-1">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

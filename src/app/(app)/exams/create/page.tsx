@@ -1,28 +1,68 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-import { CheckCircle, ClipboardList, AlertTriangle } from "lucide-react";
+import { CheckCircle, ClipboardList } from "lucide-react";
 import { z } from "zod";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 const examSchema = z.object({
   name: z.string().min(3, "Exam name must be at least 3 characters"),
 });
 
 export default function CreateExamPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const schoolId = useSchoolId();
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  async function handleCreate() {
+  const createExam = useMutation({
+    mutationFn: async () => {
+      const supabase = createClient();
+      const { data: year } = await supabase
+        .from("academic_years")
+        .select("id")
+        .eq("school_id", schoolId)
+        .eq("is_current", true)
+        .single();
+
+      const { error } = await supabase.from("exams").insert({
+        name,
+        starts_on: startDate || null,
+        ends_on: endDate || null,
+        academic_year_id: year?.id,
+        status: "scheduled",
+        school_id: schoolId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.school.exams(schoolId) });
+      toast.success("Exam created", { description: `"${name}" has been scheduled` });
+      setSuccess(true);
+      setTimeout(() => { setSuccess(false); setName(""); setStartDate(""); setEndDate(""); }, 2000);
+      router.push("/exams");
+    },
+    onError: (error) => {
+      toast.error("Failed to create exam", { description: error.message });
+    },
+  });
+
+  function handleCreate() {
     const result = examSchema.safeParse({ name });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -31,37 +71,13 @@ export default function CreateExamPage() {
       return;
     }
     setValidationErrors({});
-    setLoading(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: staff } = await supabase.from("staff").select("school_id").eq("id", user.id).single();
-    if (!staff) return;
-
-    const { data: year } = await supabase
-      .from("academic_years")
-      .select("id")
-      .eq("school_id", staff.school_id)
-      .eq("is_current", true)
-      .single();
-
-    await supabase.from("exams").insert({
-      name,
-      starts_on: startDate || null,
-      ends_on: endDate || null,
-      academic_year_id: year?.id,
-      status: "scheduled",
-      school_id: staff.school_id,
-    });
-
-    setSuccess(true);
-    setLoading(false);
-    setTimeout(() => { setSuccess(false); setName(""); setStartDate(""); setEndDate(""); }, 2000);
+    createExam.mutate();
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Exams", href: "/exams" }, { label: "Create Exam" }]} />
+      <div className="space-y-6">
       <PageHeader title="Create Exam" description="Schedule a new exam" />
 
       {success && (
@@ -79,26 +95,27 @@ export default function CreateExamPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="text-ink">Exam Name</Label>
-            <Input value={name} onChange={(e) => { setName(e.target.value); setValidationErrors((p) => ({ ...p, name: "" })); }} placeholder="Mid-Term Examination" className="mt-1.5" />
+            <Label htmlFor="exam-name" className="text-ink">Exam Name</Label>
+            <Input id="exam-name" value={name} onChange={(e) => { setName(e.target.value); setValidationErrors((p) => ({ ...p, name: "" })); }} placeholder="Mid-Term Examination" className="mt-1.5" />
             {validationErrors.name && <p className="text-xs text-danger mt-1">{validationErrors.name}</p>}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-ink">Start Date</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-1.5" />
+              <Label htmlFor="start-date" className="text-ink">Start Date</Label>
+              <Input id="start-date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-1.5" />
             </div>
             <div>
-              <Label className="text-ink">End Date</Label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1.5" />
+              <Label htmlFor="end-date" className="text-ink">End Date</Label>
+              <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1.5" />
             </div>
           </div>
-          <Button onClick={handleCreate} disabled={loading || !name} className="w-full bg-accent hover:bg-accent/90 text-white">
+          <Button onClick={handleCreate} disabled={!name} isLoading={createExam.isPending} className="w-full bg-accent hover:bg-accent/90 text-white">
             <ClipboardList className="h-4 w-4 mr-2" />
-            {loading ? "Creating..." : "Create Exam"}
+            Create Exam
           </Button>
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

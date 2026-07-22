@@ -1,14 +1,10 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
-  GraduationCap,
-  Users,
   Banknote,
-  ClipboardCheck,
   Shield,
   Zap,
   CheckCircle,
-  Star,
   ArrowRight,
   Globe,
   Lock,
@@ -16,11 +12,18 @@ import {
   MessageSquare,
   Calendar,
   BookOpen,
-  ChevronDown,
+  Menu,
 } from "lucide-react";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Sanad — School & Academy Management Platform",
+  description:
+    "The digital backbone of Pakistani education. Manage attendance, fees, exams, and parent communication — all in one platform built for Pakistani schools.",
+};
 
 export default async function LandingPage() {
   interface Plan {
@@ -95,32 +98,38 @@ export default async function LandingPage() {
     },
   ];
 
-  const testimonials = [
-    {
-      name: "Fatima Khan",
-      role: "Principal, Al-Noor Academy",
-      content: "Sanad transformed how we manage our 800-student academy. Fee collection time dropped from 3 days to 3 hours. The parent portal alone was worth it.",
-      rating: 5,
-    },
-    {
-      name: "Ahmed Raza",
-      role: "Director, Punjab STEM School",
-      content: "We tried 4 different systems before Sanad. The Urdu support and Pakistani calendar integration made it an instant fit for our staff.",
-      rating: 5,
-    },
-    {
-      name: "Dr. Saima Malik",
-      role: "Owner, Smart Learning Center",
-      content: "The attendance system is brilliant. Parents get instant notifications and our teachers can mark a class of 60 students in under 2 minutes.",
-      rating: 5,
-    },
-  ];
-
   const stats = [
     { value: "50+", label: "Schools Onboarded" },
     { value: "12,000+", label: "Students Managed" },
     { value: "99.9%", label: "Uptime" },
     { value: "4.9/5", label: "User Rating" },
+  ];
+
+  const faqs = [
+    {
+      q: "What happens when the trial ends?",
+      a: "Your school's data stays safe. You can view existing records, but new entries are paused until you choose a plan.",
+    },
+    {
+      q: "Can we export our data if we leave?",
+      a: "Yes. You can request a full data export at any time. We retain your data for 90 days after cancellation.",
+    },
+    {
+      q: "Is our students' data secure?",
+      a: "Yes. Each school's data is completely isolated with row-level security. We use industry-standard encryption and strict role-based access controls.",
+    },
+    {
+      q: "Do you support both Matric/FSc and O/A-Level?",
+      a: "Yes. Sanad works with all board types — Matric/FSc, Cambridge O/A-Level, Montessori, and mixed institutions.",
+    },
+    {
+      q: "Do you support Urdu?",
+      a: "Yes. Full Urdu language support with RTL layout is built-in. Toggle between English and Urdu anytime.",
+    },
+    {
+      q: "Can parents access the system?",
+      a: "Yes. Every school gets a parent portal where parents can view attendance, marks, fees, homework, and announcements for their children.",
+    },
   ];
 
   return (
@@ -139,10 +148,9 @@ export default async function LandingPage() {
           <nav className="hidden md:flex items-center gap-8 text-sm text-slate">
             <a href="#features" className="hover:text-ink transition-colors">Features</a>
             <a href="#pricing" className="hover:text-ink transition-colors">Pricing</a>
-            <a href="#testimonials" className="hover:text-ink transition-colors">Testimonials</a>
             <a href="#faq" className="hover:text-ink transition-colors">FAQ</a>
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <Link href="/login">
               <Button variant="ghost" className="text-ink">
                 Log in
@@ -154,6 +162,32 @@ export default async function LandingPage() {
               </Button>
             </Link>
           </div>
+
+          {/* Mobile hamburger */}
+          <details className="md:hidden relative">
+            <summary className="list-none cursor-pointer p-2 rounded-lg hover:bg-slate-light/50 transition-colors" aria-label="Menu">
+              <Menu className="h-5 w-5 text-ink" />
+            </summary>
+            <div className="absolute right-0 top-full mt-2 w-56 bg-paper-raised rounded-xl border border-slate-light shadow-xl p-4 z-50">
+              <nav className="flex flex-col gap-3 text-sm text-slate">
+                <a href="#features" className="hover:text-ink transition-colors py-1.5" onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}>Features</a>
+                <a href="#pricing" className="hover:text-ink transition-colors py-1.5" onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}>Pricing</a>
+                <a href="#faq" className="hover:text-ink transition-colors py-1.5" onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}>FAQ</a>
+              </nav>
+              <div className="border-t border-slate-light mt-3 pt-3 flex flex-col gap-2">
+                <Link href="/login" onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}>
+                  <Button variant="ghost" className="w-full justify-center text-ink">
+                    Log in
+                  </Button>
+                </Link>
+                <Link href="/signup" onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}>
+                  <Button className="w-full justify-center bg-accent hover:bg-accent/90 text-white">
+                    Start free trial
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </details>
         </div>
       </header>
 
@@ -181,7 +215,7 @@ export default async function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Link href="/signup">
-              <Button size="lg" className="bg-accent hover:bg-accent/90 text-white px-8">
+              <Button size="xl" className="bg-accent hover:bg-accent/90 text-white px-8">
                 Start your free trial
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -297,41 +331,6 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section id="testimonials" className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-ink mb-4">
-              Trusted by schools across Pakistan
-            </h2>
-            <p className="text-slate max-w-xl mx-auto">
-              See what educators are saying about Sanad.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((t) => (
-              <div
-                key={t.name}
-                className="bg-paper-raised rounded-xl p-6 border border-slate-light"
-              >
-                <div className="flex gap-1 mb-4">
-                  {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-accent text-accent" />
-                  ))}
-                </div>
-                <p className="text-sm text-slate leading-relaxed mb-4">
-                  &ldquo;{t.content}&rdquo;
-                </p>
-                <div>
-                  <p className="font-semibold text-ink text-sm">{t.name}</p>
-                  <p className="text-xs text-slate">{t.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Pricing */}
       <section id="pricing" className="py-20 px-4 bg-paper-raised">
         <div className="max-w-6xl mx-auto">
@@ -417,11 +416,11 @@ export default async function LandingPage() {
               Bank Transfer
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-success" />
+              <Banknote className="h-5 w-5 text-success" />
               JazzCash
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-success" />
+              <Banknote className="h-5 w-5 text-success" />
               Easypaisa
             </div>
           </div>
@@ -434,47 +433,18 @@ export default async function LandingPage() {
           <h2 className="font-display text-3xl font-bold text-ink text-center mb-12">
             Frequently asked questions
           </h2>
-          <div className="space-y-4">
-            {[
-              {
-                q: "What happens when the trial ends?",
-                a: "Your school's data stays safe. You can view existing records, but new entries are paused until you choose a plan.",
-              },
-              {
-                q: "Can we export our data if we leave?",
-                a: "Yes. You can request a full data export at any time. We retain your data for 90 days after cancellation.",
-              },
-              {
-                q: "Is our students' data secure?",
-                a: "Yes. Each school's data is completely isolated with row-level security. We use industry-standard encryption and strict role-based access controls.",
-              },
-              {
-                q: "Do you support both Matric/FSc and O/A-Level?",
-                a: "Yes. Sanad works with all board types — Matric/FSc, Cambridge O/A-Level, Montessori, and mixed institutions.",
-              },
-              {
-                q: "Do you support Urdu?",
-                a: "Yes. Full Urdu language support with RTL layout is built-in. Toggle between English and Urdu anytime.",
-              },
-              {
-                q: "Can parents access the system?",
-                a: "Yes. Every school gets a parent portal where parents can view attendance, marks, fees, homework, and announcements for their children.",
-              },
-            ].map((faq, i) => (
-              <details
-                key={i}
-                className="group bg-paper rounded-xl border border-slate-light overflow-hidden"
-              >
-                <summary className="flex items-center justify-between p-5 cursor-pointer font-semibold text-ink hover:text-accent transition-colors">
+          <Accordion type="single">
+            {faqs.map((faq, i) => (
+              <AccordionItem key={i} value={`faq-${i}`} className="border border-slate-light rounded-xl mb-3 overflow-hidden">
+                <AccordionTrigger value={`faq-${i}`} className="px-5 py-4 font-semibold text-ink hover:text-accent hover:no-underline transition-colors">
                   {faq.q}
-                  <ChevronDown className="h-5 w-5 text-slate group-open:rotate-180 transition-transform" />
-                </summary>
-                <div className="px-5 pb-5 text-sm text-slate leading-relaxed">
+                </AccordionTrigger>
+                <AccordionContent value={`faq-${i}`} className="px-5 pb-4 text-sm text-slate leading-relaxed">
                   {faq.a}
-                </div>
-              </details>
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </div>
+          </Accordion>
         </div>
       </section>
 
@@ -488,7 +458,7 @@ export default async function LandingPage() {
             Join 50+ schools across Pakistan already using Sanad to streamline their operations.
           </p>
           <Link href="/signup">
-            <Button size="lg" className="bg-accent hover:bg-accent/90 text-white px-8">
+            <Button size="xl" className="bg-accent hover:bg-accent/90 text-white px-8">
               Start your free trial
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -516,7 +486,6 @@ export default async function LandingPage() {
               <ul className="space-y-2 text-sm text-slate">
                 <li><a href="#features" className="hover:text-ink transition-colors">Features</a></li>
                 <li><a href="#pricing" className="hover:text-ink transition-colors">Pricing</a></li>
-                <li><a href="#testimonials" className="hover:text-ink transition-colors">Testimonials</a></li>
               </ul>
             </div>
             <div>

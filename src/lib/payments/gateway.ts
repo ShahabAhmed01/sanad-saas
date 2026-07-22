@@ -183,7 +183,7 @@ export class RapidGateway implements PaymentGateway {
         status: data.status,
         gatewayReference: data.gateway_reference || data.id,
       };
-    } catch (error) {
+    } catch {
       return {
         verified: false,
         referenceId,
@@ -217,9 +217,6 @@ export class RapidGateway implements PaymentGateway {
       );
 
       const expectedSigArray = await crypto.subtle.sign("HMAC", cryptoKey, body);
-      const expectedSignature = Array.from(new Uint8Array(expectedSigArray))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
 
       // Constant-time comparison
       const sigBytes = new Uint8Array(

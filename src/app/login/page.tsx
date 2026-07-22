@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const registered = searchParams.get("registered") === "true";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -34,10 +36,12 @@ function LoginForm() {
 
     if (authError) {
       setError(authError.message);
+      toast.error("Sign in failed", { description: authError.message });
       setLoading(false);
       return;
     }
 
+    toast.success("Welcome back!");
     router.push("/dashboard");
     router.refresh();
   }
@@ -56,7 +60,7 @@ function LoginForm() {
         </div>
 
         {/* Card */}
-        <div className="bg-paper-raised rounded-xl border border-slate-light p-8">
+        <div className="bg-paper-raised rounded-xl border border-slate-light p-8 shadow-sm">
           <h1 className="font-display text-xl font-semibold text-ink mb-1">
             Welcome back
           </h1>
@@ -65,7 +69,10 @@ function LoginForm() {
           </p>
 
           {registered && (
-            <div className="bg-success/10 text-success text-sm p-3 rounded-lg mb-4">
+            <div className="bg-success/10 text-success text-sm p-3 rounded-lg mb-4 flex items-center gap-2">
+              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="20 6 9 17 4 12" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
               Account created! Please sign in with your credentials.
             </div>
           )}
@@ -88,44 +95,64 @@ function LoginForm() {
                 placeholder="admin@school.edu.pk"
                 className="mt-1.5"
                 required
+                autoComplete="email"
               />
             </div>
             <div>
               <Label htmlFor="password" className="text-ink">
                 Password
               </Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Enter your password"
-                className="mt-1.5"
-                required
-              />
+              <div className="relative mt-1.5">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  required
+                  autoComplete="current-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-slate">
+              <label htmlFor="remember-me" className="flex items-center gap-2 text-sm text-slate cursor-pointer">
                 <input
+                  id="remember-me"
                   type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded border-slate-light"
+                  className="rounded border-slate-light h-4 w-4 accent-accent"
                 />
                 Remember me
               </label>
               <Link
                 href="/forgot-password"
-                className="text-sm text-accent hover:text-accent-ink"
+                className="text-sm text-accent hover:text-accent-ink font-medium"
               >
                 Forgot password?
               </Link>
             </div>
             <Button
               type="submit"
-              className="w-full bg-accent hover:bg-accent/90 text-white"
-              disabled={loading}
+              className="w-full bg-accent hover:bg-accent/90 text-white h-11"
+              isLoading={loading}
             >
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? (
+                "Signing in..."
+              ) : (
+                "Sign in"
+              )}
             </Button>
           </form>
         </div>
@@ -149,7 +176,10 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-paper flex items-center justify-center px-4">
-        <div className="text-center text-slate">Loading...</div>
+        <div className="flex items-center gap-2 text-slate">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Loading...
+        </div>
       </div>
     }>
       <LoginForm />

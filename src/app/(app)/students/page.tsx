@@ -1,14 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { GraduationCap, Plus } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { GraduationCap, Plus, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+import { useSchoolId } from "@/hooks/use-user-profile";
+import { queryKeys } from "@/lib/query-keys";
 
 interface Student {
   id: string;
@@ -20,37 +24,29 @@ interface Student {
   section_id: string;
 }
 
+async function fetchStudents(schoolId: string): Promise<Student[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("students")
+    .select("*")
+    .eq("school_id", schoolId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error("Failed to load students");
+  return data || [];
+}
+
 export default function StudentsPage() {
   const router = useRouter();
-  const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const schoolId = useSchoolId();
 
-  useEffect(() => {
-    async function loadStudents() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setError("Not authenticated"); setLoading(false); return; }
+  const { data: students = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey: queryKeys.school.students(schoolId),
+    queryFn: () => fetchStudents(schoolId),
+    enabled: !!schoolId,
+  });
 
-      const { data: staff, error: staffErr } = await supabase
-        .from("staff")
-        .select("school_id")
-        .eq("id", user.id)
-        .single();
-      if (staffErr || !staff) { setError("Failed to load school info"); setLoading(false); return; }
-
-      const { data, error: queryErr } = await supabase
-        .from("students")
-        .select("*")
-        .eq("school_id", staff.school_id)
-        .order("created_at", { ascending: false });
-
-      if (queryErr) { setError("Failed to load students"); setLoading(false); return; }
-      setStudents(data || []);
-      setLoading(false);
-    }
-    loadStudents();
-  }, []);
+  const error = queryError ? queryError.message : null;
 
   const columns = [
     {
@@ -60,7 +56,36 @@ export default function StudentsPage() {
         <span className="font-mono text-xs">{item.admission_number}</span>
       ),
     },
-    { key: "full_name", header: "Name" },
+    { 
+      key: "full_name", 
+      header: "Name",
+      renderPreview: (item: Student) => (
+        <div className="space-y-2">
+          <div>
+            <p className="font-semibold text-foreground">{item.full_name}</p>
+            <p className="text-xs text-muted-foreground">#{item.admission_number}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <p className="text-muted-foreground">Gender</p>
+              <p className="font-medium capitalize">{item.gender || "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Status</p>
+              <p className="font-medium capitalize">{item.status}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-muted-foreground">Admitted</p>
+              <p className="font-medium">
+                {item.admission_date
+                  ? new Date(item.admission_date).toLocaleDateString("en-PK")
+                  : "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+      ),
+    },
     {
       key: "gender",
       header: "Gender",
@@ -76,7 +101,9 @@ export default function StudentsPage() {
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
             item.status === "active"
               ? "bg-success/10 text-success"
-              : "bg-slate/10 text-slate"
+              : item.status === "inactive"
+              ? "bg-danger/10 text-danger"
+              : "bg-muted text-muted-foreground"
           }`}
         >
           {item.status}
@@ -95,13 +122,24 @@ export default function StudentsPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs items={[{ label: "Students" }]} />
+
       <PageHeader
         title="Student Management"
         description="Manage your school's students"
         action={
           <div className="flex gap-2">
-            <Button variant="outline">Import CSV</Button>
-            <Button className="bg-accent hover:bg-accent/90 text-white">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/students/import")}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Import CSV
+            </Button>
+            <Button
+              className="bg-accent hover:bg-accent/90 text-white"
+              onClick={() => router.push("/students/create")}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Student
             </Button>
@@ -137,6 +175,11 @@ export default function StudentsPage() {
           columns={columns}
           searchKeys={["full_name", "admission_number"]}
           searchPlaceholder="Search by name or admission number..."
+          onRowClick={(item) => {
+            toast.info(`Viewing ${item.full_name}`, {
+              description: `Admission #${item.admission_number}`,
+            });
+          }}
         />
       )}
     </div>

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarCheck, ClipboardCheck, Banknote, FileText } from "lucide-react";
+import { AlertCircle, CalendarCheck, ClipboardCheck, Banknote, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 interface ChildInfo {
   id: string;
@@ -12,52 +13,51 @@ interface ChildInfo {
   admission_number: string;
 }
 
+async function fetchChild(childId: string | null): Promise<ChildInfo | null> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: guardian } = await supabase
+    .from("guardians")
+    .select("id")
+    .eq("auth_user_id", user.id)
+    .single();
+
+  if (!guardian) return null;
+
+  let query = supabase
+    .from("student_guardians")
+    .select("student_id, students!inner (id, full_name, admission_number)")
+    .eq("guardian_id", guardian.id);
+
+  if (childId) {
+    query = query.eq("student_id", childId);
+  }
+
+  const { data: sgList } = await query;
+
+  if (sgList && sgList.length > 0) {
+    const sg = childId ? sgList[0] : sgList[0];
+    const student = sg.students as unknown as ChildInfo;
+    return {
+      id: student.id,
+      full_name: student.full_name,
+      admission_number: student.admission_number,
+    };
+  }
+  return null;
+}
+
 function ParentDashboardContent() {
-  const [child, setChild] = useState<ChildInfo | null>(null);
-  const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const childId = searchParams.get("child");
 
-  useEffect(() => {
-    async function loadChild() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Get guardian record
-      const { data: guardian } = await supabase
-        .from("guardians")
-        .select("id")
-        .eq("auth_user_id", user.id)
-        .single();
-
-      if (!guardian) { setLoading(false); return; }
-
-      // Build query - if childId is specified, fetch that specific child
-      let query = supabase
-        .from("student_guardians")
-        .select("student_id, students!inner (id, full_name, admission_number)")
-        .eq("guardian_id", guardian.id);
-
-      if (childId) {
-        query = query.eq("student_id", childId);
-      }
-
-      const { data: sgList } = await query;
-
-      if (sgList && sgList.length > 0) {
-        const sg = childId ? sgList[0] : sgList[0];
-        const student = sg.students as unknown as ChildInfo;
-        setChild({
-          id: student.id,
-          full_name: student.full_name,
-          admission_number: student.admission_number,
-        });
-      }
-      setLoading(false);
-    }
-    loadChild();
-  }, [childId]);
+  const { data: child, isLoading: loading, error } = useQuery<ChildInfo | null>({
+    queryKey: ["parent-child", childId],
+    queryFn: () => fetchChild(childId),
+    enabled: !!childId,
+  });
 
   if (loading) {
     return (
@@ -65,6 +65,16 @@ function ParentDashboardContent() {
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="h-24 bg-paper-raised rounded-xl animate-skeleton" />
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-xs text-slate mt-1">{error.message}</p>
       </div>
     );
   }
@@ -123,8 +133,8 @@ function ParentDashboardContent() {
         <a href="/parent/fees">
           <Card className="border-slate-light hover:border-accent transition-colors cursor-pointer">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-danger/10 flex items-center justify-center">
-                <Banknote className="h-5 w-5 text-danger" />
+              <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                <Banknote className="h-5 w-5 text-accent" />
               </div>
               <div>
                 <p className="font-medium text-ink text-sm">Fees</p>

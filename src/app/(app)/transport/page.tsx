@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Bus, Plus } from "lucide-react";
+import { AlertCircle, Bus, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { useQuery } from "@tanstack/react-query";
+import { useSchoolId } from "@/hooks/use-user-profile";
 
 interface Route {
   id: string;
@@ -18,22 +19,33 @@ interface Route {
 
 export default function TransportPage() {
   const router = useRouter();
-  const [routes, setRoutes] = useState<Route[]>([]);
-  const [loading, setLoading] = useState(true);
+  const schoolId = useSchoolId();
 
-  useEffect(() => {
-    async function loadRoutes() {
+  const { data: routes = [], isLoading: loading, error } = useQuery<Route[], Error>({
+    queryKey: ["transport-routes", schoolId],
+    queryFn: async () => {
       const supabase = createClient();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("transport_routes")
         .select("*")
+        .eq("school_id", schoolId)
         .order("name");
 
-      setRoutes(data || []);
-      setLoading(false);
-    }
-    loadRoutes();
-  }, []);
+      if (error) throw new Error(error.message);
+      return data || [];
+    },
+    enabled: !!schoolId,
+  });
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-xs text-slate mt-1">{error.message}</p>
+      </div>
+    );
+  }
 
   const columns = [
     { key: "name", header: "Route Name" },
@@ -50,7 +62,9 @@ export default function TransportPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <>
+      <Breadcrumbs items={[{ label: "Transport" }]} />
+      <div className="space-y-6">
       <PageHeader
         title="Transport"
         description="Manage routes, vehicles, and student assignments"
@@ -84,5 +98,6 @@ export default function TransportPage() {
         />
       )}
     </div>
+    </>
   );
 }

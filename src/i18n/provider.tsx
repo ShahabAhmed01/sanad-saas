@@ -7,8 +7,6 @@ import ur from "./ur.json";
 
 const translations = { en, ur } as const;
 
-type TranslationKey = string;
-
 function getNestedValue(obj: Record<string, unknown>, path: string): string {
   return (path.split(".").reduce<unknown>((acc, key) => (acc as Record<string, unknown>)?.[key], obj) as string) ?? path;
 }

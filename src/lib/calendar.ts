@@ -312,7 +312,6 @@ export function getYearHolidays(year: number): Array<{
   // Islamic holidays — convert Hijri dates to Gregorian for this year
   // Use a reference: 1 Muharram 1446 AH ≈ 7 July 2024 CE
   const refHijriYear = 1446;
-  const refGregorian = new Date(2024, 6, 7); // July 7, 2024
 
   for (const h of islamicHolidays) {
     // Calculate approximate Hijri year for this Gregorian year

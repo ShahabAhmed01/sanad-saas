@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FileText } from "lucide-react";
+import { AlertCircle, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 interface HomeworkItem {
   id: string;
@@ -15,64 +16,74 @@ interface HomeworkItem {
   created_at: string;
 }
 
+async function fetchHomework(childId: string | null): Promise<HomeworkItem[]> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  let sectionId: string | undefined;
+
+  if (childId) {
+    const { data: student } = await supabase
+      .from("students")
+      .select("section_id")
+      .eq("id", childId)
+      .single();
+    sectionId = student?.section_id;
+  } else {
+    const { data: guardian } = await supabase
+      .from("guardians")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .single();
+
+    if (!guardian) return [];
+
+    const { data: sgList } = await supabase
+      .from("student_guardians")
+      .select("student_id, students!inner (section_id)")
+      .eq("guardian_id", guardian.id)
+      .limit(1);
+
+    if (!sgList || sgList.length === 0) return [];
+
+    const studentData = Array.isArray(sgList[0].students)
+      ? (sgList[0].students as { section_id: string }[])[0]
+      : null;
+    sectionId = studentData?.section_id;
+  }
+
+  if (!sectionId) return [];
+
+  const { data } = await supabase
+    .from("homework")
+    .select("id, title, description, due_date, created_at")
+    .eq("section_id", sectionId)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  return data || [];
+}
+
 function ParentHomeworkContent() {
-  const [homework, setHomework] = useState<HomeworkItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const childId = searchParams.get("child");
 
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  const { data: homework = [], isLoading: loading, error } = useQuery<HomeworkItem[]>({
+    queryKey: ["parent-homework", childId],
+    queryFn: () => fetchHomework(childId),
+    enabled: !!childId,
+  });
 
-      let sectionId: string | undefined;
-
-      if (childId) {
-        const { data: student } = await supabase
-          .from("students")
-          .select("section_id")
-          .eq("id", childId)
-          .single();
-        sectionId = student?.section_id;
-      } else {
-        const { data: guardian } = await supabase
-          .from("guardians")
-          .select("id")
-          .eq("auth_user_id", user.id)
-          .single();
-
-        if (!guardian) { setLoading(false); return; }
-
-        const { data: sgList } = await supabase
-          .from("student_guardians")
-          .select("student_id, students!inner (section_id)")
-          .eq("guardian_id", guardian.id)
-          .limit(1);
-
-        if (!sgList || sgList.length === 0) { setLoading(false); return; }
-
-        const studentData = Array.isArray(sgList[0].students)
-          ? (sgList[0].students as { section_id: string }[])[0]
-          : null;
-        sectionId = studentData?.section_id;
-      }
-
-      if (!sectionId) { setLoading(false); return; }
-
-      const { data } = await supabase
-        .from("homework")
-        .select("id, title, description, due_date, created_at")
-        .eq("section_id", sectionId)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      setHomework(data || []);
-      setLoading(false);
-    }
-    load();
-  }, [childId]);
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-10 w-10 text-danger mb-3" />
+        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-xs text-slate mt-1">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
