@@ -2,11 +2,11 @@ FROM node:22-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat icu-libs
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm install --no-audit --retry 3
+RUN npm ci --no-audit
 
 # Rebuild the source code only when needed
 FROM base AS builder

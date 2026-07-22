@@ -33,7 +33,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' https://*.supabase.co data: blob:",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co https://vitals.vercel-insights.com",
+      "connect-src 'self' https://*.supabase.co https://vitals.vercel-insights.com/v1/vitals",
       "frame-ancestors 'none'",
     ].join("; "),
   },

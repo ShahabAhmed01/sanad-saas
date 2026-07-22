@@ -50,7 +50,3 @@ docker-compose.override.yml
 
 # os
 Thumbs.db
-.DS_Store
-
-.vercel
-.env*

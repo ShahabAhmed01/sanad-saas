@@ -7,7 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-import { CheckCircle, ClipboardList } from "lucide-react";
+import { CheckCircle, ClipboardList, AlertTriangle } from "lucide-react";
+import { z } from "zod";
+
+const examSchema = z.object({
+  name: z.string().min(3, "Exam name must be at least 3 characters"),
+});
 
 export default function CreateExamPage() {
   const [name, setName] = useState("");
@@ -15,9 +20,17 @@ export default function CreateExamPage() {
   const [endDate, setEndDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   async function handleCreate() {
-    if (!name) return;
+    const result = examSchema.safeParse({ name });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach((e) => { fieldErrors[e.path[0] as string] = e.message; });
+      setValidationErrors(fieldErrors);
+      return;
+    }
+    setValidationErrors({});
     setLoading(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -67,7 +80,8 @@ export default function CreateExamPage() {
         <CardContent className="space-y-4">
           <div>
             <Label className="text-ink">Exam Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Mid-Term Examination" className="mt-1.5" />
+            <Input value={name} onChange={(e) => { setName(e.target.value); setValidationErrors((p) => ({ ...p, name: "" })); }} placeholder="Mid-Term Examination" className="mt-1.5" />
+            {validationErrors.name && <p className="text-xs text-danger mt-1">{validationErrors.name}</p>}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

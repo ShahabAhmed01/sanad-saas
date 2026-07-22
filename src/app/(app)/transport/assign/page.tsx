@@ -56,6 +56,17 @@ export default function TransportAssignPage() {
     setLoading(true);
     const supabase = createClient();
 
+    const { data: existing } = await supabase
+      .from("student_transport")
+      .select("id")
+      .eq("student_id", selectedStudent.id)
+      .maybeSingle();
+
+    if (existing) {
+      setSuccess(`${selectedStudent.full_name} already assigned to a route — updating...`);
+      setTimeout(() => setSuccess(""), 2000);
+    }
+
     await supabase.from("student_transport").upsert({
       student_id: selectedStudent.id,
       route_id: selectedRoute,

@@ -22,6 +22,7 @@ interface DataTableProps<T> {
   pageSize?: number;
   emptyMessage?: string;
   onRowClick?: (item: T) => void;
+  rowKey?: keyof T;
 }
 
 export function DataTable<T>({
@@ -33,6 +34,7 @@ export function DataTable<T>({
   pageSize = 20,
   emptyMessage = "No records found",
   onRowClick,
+  rowKey,
 }: DataTableProps<T>) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -101,7 +103,7 @@ export function DataTable<T>({
               ) : (
                 paginated.map((item, i) => (
                   <tr
-                    key={i}
+                    key={rowKey ? String(item[rowKey]) : i}
                     onClick={() => onRowClick?.(item)}
                     className={cn(
                       "hover:bg-paper transition-colors",

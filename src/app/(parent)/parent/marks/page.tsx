@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ClipboardCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useSearchParams } from "next/navigation";
 
 interface MarkRecord {
   id: string;
@@ -17,9 +18,11 @@ interface MarkRecord {
   };
 }
 
-export default function ParentMarks() {
+function ParentMarksContent() {
   const [marks, setMarks] = useState<MarkRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const childId = searchParams.get("child");
 
   useEffect(() => {
     async function load() {
@@ -27,22 +30,26 @@ export default function ParentMarks() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: guardian } = await supabase
-        .from("guardians")
-        .select("id")
-        .eq("auth_user_id", user.id)
-        .single();
+      let studentId = childId;
 
-      if (!guardian) { setLoading(false); return; }
+      if (!studentId) {
+        const { data: guardian } = await supabase
+          .from("guardians")
+          .select("id")
+          .eq("auth_user_id", user.id)
+          .single();
 
-      const { data: sg } = await supabase
-        .from("student_guardians")
-        .select("student_id")
-        .eq("guardian_id", guardian.id)
-        .limit(1)
-        .single();
+        if (!guardian) { setLoading(false); return; }
 
-      if (!sg) { setLoading(false); return; }
+        const { data: sgList } = await supabase
+          .from("student_guardians")
+          .select("student_id")
+          .eq("guardian_id", guardian.id)
+          .limit(1);
+
+        if (!sgList || sgList.length === 0) { setLoading(false); return; }
+        studentId = sgList[0].student_id;
+      }
 
       // Only published exam marks
       const { data } = await supabase
@@ -55,14 +62,14 @@ export default function ParentMarks() {
             exams!inner (name, status)
           )
         `)
-        .eq("student_id", sg.student_id)
+        .eq("student_id", studentId)
         .eq("exam_subject_schedule.exams.status", "published");
 
       setMarks((data as unknown as MarkRecord[]) || []);
       setLoading(false);
     }
     load();
-  }, []);
+  }, [childId]);
 
   return (
     <div className="space-y-6">
@@ -102,5 +109,19 @@ export default function ParentMarks() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ParentMarks() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-2">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-12 bg-paper-raised rounded-lg animate-skeleton" />
+        ))}
+      </div>
+    }>
+      <ParentMarksContent />
+    </Suspense>
   );
 }

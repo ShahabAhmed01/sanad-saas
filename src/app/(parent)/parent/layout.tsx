@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -13,7 +13,7 @@ import {
   LogOut,
   ChevronDown,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const parentNav = [
@@ -30,12 +30,13 @@ interface Child {
   full_name: string;
 }
 
-export default function ParentLayout({
+function ParentLayoutInner({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [childSelectorOpen, setChildSelectorOpen] = useState(false);
   const [children_, setChildren] = useState<Child[]>([]);
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
@@ -62,10 +63,13 @@ export default function ParentLayout({
         .eq("guardian_id", guardian.id);
 
       if (links) {
-        const childList = links
-          .flatMap((l) => l.students ?? []) as unknown as Child[];
+        const childList = links.map((l) => l.students as unknown as Child);
         setChildren(childList);
-        if (childList.length > 0) {
+        const childIdFromUrl = searchParams.get("child");
+        if (childIdFromUrl) {
+          const found = childList.find((c) => c.id === childIdFromUrl);
+          if (found) setSelectedChild(found);
+        } else if (childList.length > 0) {
           setSelectedChild(childList[0]);
         }
       }
@@ -121,6 +125,7 @@ export default function ParentLayout({
                     onClick={() => {
                       setSelectedChild(child);
                       setChildSelectorOpen(false);
+                      window.history.replaceState(null, "", `?child=${child.id}`);
                     }}
                     className={cn(
                       "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors text-left",
@@ -202,5 +207,21 @@ export default function ParentLayout({
         </div>
       </nav>
     </div>
+  );
+}
+
+export default function ParentLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-paper flex items-center justify-center">
+        <div className="text-center text-slate">Loading...</div>
+      </div>
+    }>
+      <ParentLayoutInner>{children}</ParentLayoutInner>
+    </Suspense>
   );
 }

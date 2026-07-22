@@ -9,6 +9,10 @@
    ========================================================= */
 
 @theme inline {
+  /* Raw CSS variables for shadcn mapping */
+  --paper: #F7F6F1;
+  --ink: #12332F;
+
   /* Sanad Brand Colors */
   --color-ink: #12332F;
   --color-paper: #F7F6F1;

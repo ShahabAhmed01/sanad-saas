@@ -41,14 +41,12 @@ export async function POST(request: Request) {
     }
 
     case "check-tables": {
-      // Check if tables exist by querying information_schema
+      // Check if tables exist by querying a known table
       const { data, error } = await admin
-        .from("information_schema.tables")
-        .select("table_name")
-        .eq("table_schema", "public")
-        .limit(5);
+        .from("schools")
+        .select("id")
+        .limit(1);
 
-      // If we can query information_schema, tables exist
       if (error) {
         return NextResponse.json({
           tablesExist: false,
@@ -58,7 +56,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         tablesExist: true,
-        tables: data?.map((t: { table_name: string }) => t.table_name) || [],
+        tables: ["schools"],
       });
     }
 

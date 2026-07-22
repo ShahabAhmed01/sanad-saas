@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CalendarCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useSearchParams } from "next/navigation";
 
 interface AttendanceRecord {
   id: string;
@@ -20,9 +21,11 @@ const statusColors: Record<string, string> = {
   leave: "text-slate",
 };
 
-export default function ParentAttendance() {
+function ParentAttendanceContent() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const childId = searchParams.get("child");
 
   useEffect(() => {
     async function load() {
@@ -30,27 +33,31 @@ export default function ParentAttendance() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: guardian } = await supabase
-        .from("guardians")
-        .select("id")
-        .eq("auth_user_id", user.id)
-        .single();
+      let studentId = childId;
 
-      if (!guardian) { setLoading(false); return; }
+      if (!studentId) {
+        const { data: guardian } = await supabase
+          .from("guardians")
+          .select("id")
+          .eq("auth_user_id", user.id)
+          .single();
 
-      const { data: sg } = await supabase
-        .from("student_guardians")
-        .select("student_id")
-        .eq("guardian_id", guardian.id)
-        .limit(1)
-        .single();
+        if (!guardian) { setLoading(false); return; }
 
-      if (!sg) { setLoading(false); return; }
+        const { data: sgList } = await supabase
+          .from("student_guardians")
+          .select("student_id")
+          .eq("guardian_id", guardian.id)
+          .limit(1);
+
+        if (!sgList || sgList.length === 0) { setLoading(false); return; }
+        studentId = sgList[0].student_id;
+      }
 
       const { data } = await supabase
         .from("student_attendance")
         .select("id, date, status")
-        .eq("student_id", sg.student_id)
+        .eq("student_id", studentId)
         .order("date", { ascending: false })
         .limit(30);
 
@@ -58,7 +65,7 @@ export default function ParentAttendance() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [childId]);
 
   return (
     <div className="space-y-6">
@@ -87,5 +94,19 @@ export default function ParentAttendance() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ParentAttendance() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-2">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-12 bg-paper-raised rounded-lg animate-skeleton" />
+        ))}
+      </div>
+    }>
+      <ParentAttendanceContent />
+    </Suspense>
   );
 }

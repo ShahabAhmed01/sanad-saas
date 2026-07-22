@@ -7,7 +7,8 @@ import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Banknote, Plus, TrendingUp, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { Banknote, Plus, TrendingUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface FeeInvoice {
@@ -32,19 +33,31 @@ export default function FeesPage() {
   const router = useRouter();
   const [invoices, setInvoices] = useState<FeeInvoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, collected: 0, pending: 0 });
 
   useEffect(() => {
     async function loadData() {
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setError("Not authenticated"); setLoading(false); return; }
 
-      const { data } = await supabase
+      const { data: staff, error: staffErr } = await supabase
+        .from("staff")
+        .select("school_id")
+        .eq("id", user.id)
+        .single();
+      if (staffErr || !staff) { setError("Failed to load school info"); setLoading(false); return; }
+
+      const { data, error: queryErr } = await supabase
         .from("fee_invoices")
         .select("*")
+        .eq("school_id", staff.school_id)
         .order("created_at", { ascending: false });
 
-      setInvoices(data || []);
+      if (queryErr) { setError("Failed to load invoices"); setLoading(false); return; }
 
+      setInvoices(data || []);
       const total = (data || []).reduce((sum, inv) => sum + Number(inv.total_amount), 0);
       const collected = (data || [])
         .filter((inv) => inv.status === "paid")
@@ -105,7 +118,17 @@ export default function FeesPage() {
         }
       />
 
+      {error && (
+        <Card className="border-danger bg-danger/5">
+          <CardContent className="p-4 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-danger" />
+            <p className="text-danger font-medium">{error}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats */}
+      {!error && (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="border-slate-light">
           <CardHeader className="pb-2">
@@ -138,6 +161,7 @@ export default function FeesPage() {
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Invoices Table */}
       {loading ? (

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ClipboardList,
   BookOpen,
@@ -9,6 +10,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const moreItems = [
   { label: "Exams", href: "/exams", icon: ClipboardList },
@@ -19,6 +21,7 @@ const moreItems = [
 ];
 
 export default function MorePage() {
+  const router = useRouter();
   return (
     <div className="space-y-4">
       <h1 className="font-display text-2xl font-bold text-ink">More</h1>
@@ -37,7 +40,15 @@ export default function MorePage() {
           </Link>
         ))}
 
-        <button className="flex items-center gap-4 p-4 rounded-xl bg-paper-raised border border-slate-light hover:bg-paper transition-colors w-full text-left">
+        <button
+          onClick={async () => {
+            const supabase = createClient();
+            await supabase.auth.signOut();
+            router.push("/login");
+            router.refresh();
+          }}
+          className="flex items-center gap-4 p-4 rounded-xl bg-paper-raised border border-slate-light hover:bg-paper transition-colors w-full text-left"
+        >
           <div className="w-10 h-10 rounded-lg bg-danger/10 flex items-center justify-center">
             <LogOut className="h-5 w-5 text-danger" />
           </div>

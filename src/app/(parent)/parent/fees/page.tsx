@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Banknote } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useSearchParams } from "next/navigation";
 
 interface FeeInvoice {
   id: string;
@@ -22,9 +23,11 @@ const statusColors: Record<string, string> = {
   overdue: "bg-danger/10 text-danger",
 };
 
-export default function ParentFees() {
+function ParentFeesContent() {
   const [invoices, setInvoices] = useState<FeeInvoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const childId = searchParams.get("child");
 
   useEffect(() => {
     async function load() {
@@ -32,34 +35,38 @@ export default function ParentFees() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: guardian } = await supabase
-        .from("guardians")
-        .select("id")
-        .eq("auth_user_id", user.id)
-        .single();
+      let studentId = childId;
 
-      if (!guardian) { setLoading(false); return; }
+      if (!studentId) {
+        const { data: guardian } = await supabase
+          .from("guardians")
+          .select("id")
+          .eq("auth_user_id", user.id)
+          .single();
 
-      const { data: sg } = await supabase
-        .from("student_guardians")
-        .select("student_id")
-        .eq("guardian_id", guardian.id)
-        .limit(1)
-        .single();
+        if (!guardian) { setLoading(false); return; }
 
-      if (!sg) { setLoading(false); return; }
+        const { data: sgList } = await supabase
+          .from("student_guardians")
+          .select("student_id")
+          .eq("guardian_id", guardian.id)
+          .limit(1);
+
+        if (!sgList || sgList.length === 0) { setLoading(false); return; }
+        studentId = sgList[0].student_id;
+      }
 
       const { data } = await supabase
         .from("fee_invoices")
         .select("id, period_label, total_amount, status, due_date")
-        .eq("student_id", sg.student_id)
+        .eq("student_id", studentId)
         .order("due_date", { ascending: false });
 
       setInvoices(data || []);
       setLoading(false);
     }
     load();
-  }, []);
+  }, [childId]);
 
   return (
     <div className="space-y-6">
@@ -81,7 +88,7 @@ export default function ParentFees() {
                 <div>
                   <p className="font-medium text-ink">{inv.period_label}</p>
                   <p className="text-xs text-slate">
-                    Due: {new Date(inv.due_date).toLocaleDateString("en-PK")}
+                    Due: {new Date(inv.due_date).toLocaleDateString("en-GB")}
                   </p>
                 </div>
                 <div className="text-right">
@@ -107,5 +114,19 @@ export default function ParentFees() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ParentFees() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-2">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-16 bg-paper-raised rounded-lg animate-skeleton" />
+        ))}
+      </div>
+    }>
+      <ParentFeesContent />
+    </Suspense>
   );
 }

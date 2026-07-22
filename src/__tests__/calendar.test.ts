@@ -89,10 +89,16 @@ describe("Pakistani Calendar", () => {
   });
 
   describe("isHoliday", () => {
-    it("identifies national holidays", () => {
-      const result = isHoliday(new Date(2025, 6, 14)); // July 14 = Independence Day
+    it("identifies national holidays - Independence Day Aug 14", () => {
+      const result = isHoliday(new Date(2025, 7, 14)); // August 14 = Independence Day
       expect(result.isHoliday).toBe(true);
       expect(result.name).toBe("Independence Day");
+    });
+
+    it("identifies national holidays - Iqbal Day Nov 9", () => {
+      const result = isHoliday(new Date(2025, 10, 9)); // November 9 = Iqbal Day
+      expect(result.isHoliday).toBe(true);
+      expect(result.name).toBe("Iqbal Day");
     });
 
     it("returns false for non-holidays", () => {

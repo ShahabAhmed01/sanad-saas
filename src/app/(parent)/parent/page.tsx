@@ -41,14 +41,13 @@ function ParentDashboardContent() {
 
       if (childId) {
         query = query.eq("student_id", childId);
-      } else {
-        query = query.limit(1);
       }
 
-      const { data: sg } = await query.single();
+      const { data: sgList } = await query;
 
-      if (sg) {
-        const student = (sg.students as unknown as ChildInfo[])[0];
+      if (sgList && sgList.length > 0) {
+        const sg = childId ? sgList[0] : sgList[0];
+        const student = sg.students as unknown as ChildInfo;
         setChild({
           id: student.id,
           full_name: student.full_name,

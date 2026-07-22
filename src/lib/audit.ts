@@ -96,11 +96,10 @@ export async function getAuditLogs(
     query = query.lte("created_at", options.endDate);
   }
 
+  const offset = options.offset ?? 0;
+  const limit = options.limit ?? 50;
   const { data, error } = await query
-    .range(
-      options.offset || 0,
-      (options.offset || 0) + (options.limit || 50) - 1
-    );
+    .range(offset, offset + limit - 1);
 
   if (error) throw error;
   return data;

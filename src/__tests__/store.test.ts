@@ -23,8 +23,9 @@ Object.defineProperty(globalThis, "localStorage", { value: localStorageMock });
 // Mock window.matchMedia
 Object.defineProperty(globalThis, "window", {
   value: {
-    matchMedia: vi.fn().mockReturnValue({ matches: false }),
+    matchMedia: vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn() }),
   },
+  configurable: true,
 });
 
 describe("Theme Store (Zustand)", () => {

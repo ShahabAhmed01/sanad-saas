@@ -29,6 +29,7 @@ export default async function LandingPage() {
     slug: string;
     price_pkr_monthly: number;
     max_students: number;
+    max_staff: number;
     is_active?: boolean;
   }
   let plans: Plan[] = [];
@@ -42,10 +43,10 @@ export default async function LandingPage() {
     plans = data || [];
   } catch {
     plans = [
-      { id: "1", name: "Trial", slug: "trial", price_pkr_monthly: 0, max_students: 100 },
-      { id: "2", name: "Starter", slug: "starter", price_pkr_monthly: 2999, max_students: 100 },
-      { id: "3", name: "Growth", slug: "growth", price_pkr_monthly: 7999, max_students: 500 },
-      { id: "4", name: "Institution", slug: "institution", price_pkr_monthly: 15999, max_students: 1500 },
+      { id: "1", name: "Trial", slug: "trial", price_pkr_monthly: 0, max_students: 100, max_staff: 20 },
+      { id: "2", name: "Starter", slug: "starter", price_pkr_monthly: 2999, max_students: 100, max_staff: 25 },
+      { id: "3", name: "Growth", slug: "growth", price_pkr_monthly: 7999, max_students: 500, max_staff: 50 },
+      { id: "4", name: "Institution", slug: "institution", price_pkr_monthly: 15999, max_students: 1500, max_staff: 200 },
     ];
   }
 

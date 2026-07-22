@@ -36,10 +36,20 @@ export async function signupSchool(input: SignupInput) {
   const userId = authData.user.id;
 
   // 2. Create school
-  const slug = validated.schoolName
+  let slug = validated.schoolName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+
+  // Ensure slug uniqueness
+  const { data: existingSlug } = await admin
+    .from("schools")
+    .select("slug")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (existingSlug) {
+    slug = `${slug}-${crypto.randomUUID().slice(0, 6)}`;
+  }
 
   const { data: school, error: schoolError } = await admin
     .from("schools")
@@ -85,7 +95,7 @@ export async function signupSchool(input: SignupInput) {
 
   if (signInError) {
     // Account created but couldn't sign in — user can log in manually
-    return { success: true, needsLogin: true };
+    return { success: true, needsLogin: true, schoolId: school.id };
   }
 
   // 5. Send welcome email
@@ -107,7 +117,7 @@ export async function inviteStaff(input: {
   const admin = createAdminClient();
 
   // 1. Create auth user with temporary password
-  const tempPassword = Math.random().toString(36).slice(-12) + "A1!";
+  const tempPassword = crypto.randomUUID().slice(0, 12) + "A1!";
 
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
     email: input.email,

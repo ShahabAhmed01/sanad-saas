@@ -36,6 +36,12 @@ export default function SignupPage() {
       return;
     }
 
+    if ("needsLogin" in result && result.needsLogin) {
+      router.push("/login?registered=true");
+      router.refresh();
+      return;
+    }
+
     router.push("/dashboard");
     router.refresh();
   }

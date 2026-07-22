@@ -96,7 +96,7 @@ export function CommandPalette() {
 
   // Keyboard shortcut to open
   useEffect(() => {
-    function handleKeyDown(e: globalThis.KeyboardEvent) {
+    function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setOpen((prev) => !prev);
@@ -120,7 +120,7 @@ export function CommandPalette() {
 
   // Keyboard navigation
   useEffect(() => {
-    function handleNav(e: globalThis.KeyboardEvent) {
+    function handleNav(e: KeyboardEvent) {
       if (!open) return;
       if (e.key === "ArrowDown") {
         e.preventDefault();

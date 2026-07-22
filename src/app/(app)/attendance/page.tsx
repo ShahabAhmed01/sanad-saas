@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { CalendarCheck, Check, X, Clock } from "lucide-react";
+import { CalendarCheck, Check, X, Clock, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface AttendanceRecord {
@@ -21,17 +21,30 @@ export default function AttendancePage() {
   const router = useRouter();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     async function loadAttendance() {
       const supabase = createClient();
-      const { data } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setError("Not authenticated"); setLoading(false); return; }
+
+      const { data: staff, error: staffErr } = await supabase
+        .from("staff")
+        .select("school_id")
+        .eq("id", user.id)
+        .single();
+      if (staffErr || !staff) { setError("Failed to load school info"); setLoading(false); return; }
+
+      const { data, error: queryErr } = await supabase
         .from("student_attendance")
         .select("*")
         .eq("date", today)
+        .eq("school_id", staff.school_id)
         .order("created_at", { ascending: false });
 
+      if (queryErr) { setError("Failed to load attendance"); setLoading(false); return; }
       setRecords(data || []);
       setLoading(false);
     }
@@ -57,8 +70,17 @@ export default function AttendancePage() {
         }
       />
 
+      {error && (
+        <Card className="border-danger bg-danger/5">
+          <CardContent className="p-4 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-danger" />
+            <p className="text-danger font-medium">{error}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats */}
-      {records.length > 0 && (
+      {!error && records.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card className="border-slate-light">
             <CardHeader className="pb-2">

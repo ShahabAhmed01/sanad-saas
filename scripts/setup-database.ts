@@ -6,9 +6,7 @@
 
 import { readFileSync } from "fs";
 import { join } from "path";
-import { config } from "dotenv";
-
-config({ path: ".env.local" });
+import "dotenv/config";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -96,22 +94,21 @@ async function main() {
     // Try multiple approaches to run SQL
     let success = false;
 
-    // Approach 1: Use the SQL endpoint
+    // Approach 1: Use the SQL endpoint (requires custom rpc/exec function in Supabase)
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           apikey: SERVICE_KEY,
           Authorization: `Bearer ${SERVICE_KEY}`,
-          Prefer: "return=minimal",
         },
         body: JSON.stringify({ query: sql }),
       });
 
       if (res.ok || res.status === 204) {
         success = true;
-        console.log(`  ✓ ${migration} completed via REST API`);
+        console.log(`  ✓ ${migration} completed via SQL endpoint`);
       }
     } catch (e) {
       // Ignore

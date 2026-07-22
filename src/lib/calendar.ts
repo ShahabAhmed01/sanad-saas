@@ -41,8 +41,8 @@ export const nationalHolidays = [
   { month: 2, day: 5, name: "Kashmir Day", nameUrdu: "یوم کشمیر" },
   { month: 3, day: 23, name: "Pakistan Day", nameUrdu: "یوم پاکستان" },
   { month: 5, day: 1, name: "Labour Day", nameUrdu: "یوم مزدور" },
-  { month: 7, day: 14, name: "Independence Day", nameUrdu: "یوم آزادی" },
-  { month: 9, day: 9, name: "Iqbal Day", nameUrdu: "یوم اقبال" },
+  { month: 8, day: 14, name: "Independence Day", nameUrdu: "یوم آزادی" },
+  { month: 11, day: 9, name: "Iqbal Day", nameUrdu: "یوم اقبال" },
   { month: 11, day: 25, name: "Quaid-e-Azam Day", nameUrdu: "یوم قائد اعظم" },
 ];
 

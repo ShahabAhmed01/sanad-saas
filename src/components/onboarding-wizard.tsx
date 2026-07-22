@@ -284,7 +284,23 @@ export function OnboardingWizard() {
               </Button>
             ) : (
               <Button
-                onClick={() => {
+                onClick={async () => {
+                  const { createClient } = await import("@/lib/supabase/client");
+                  const supabase = createClient();
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (user) {
+                    const { data: staff } = await supabase
+                      .from("staff")
+                      .select("school_id")
+                      .eq("id", user.id)
+                      .single();
+                    if (staff) {
+                      await supabase
+                        .from("schools")
+                        .update({ name: data.schoolName, city: data.city, board_type: data.boardType })
+                        .eq("id", staff.school_id);
+                    }
+                  }
                   window.location.href = "/dashboard";
                 }}
                 className="bg-accent hover:bg-accent/90 text-white"

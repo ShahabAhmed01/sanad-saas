@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ClipboardList, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -28,15 +29,28 @@ export default function ExamsPage() {
   const router = useRouter();
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadExams() {
       const supabase = createClient();
-      const { data } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setError("Not authenticated"); setLoading(false); return; }
+
+      const { data: staff, error: staffErr } = await supabase
+        .from("staff")
+        .select("school_id")
+        .eq("id", user.id)
+        .single();
+      if (staffErr || !staff) { setError("Failed to load school info"); setLoading(false); return; }
+
+      const { data, error: queryErr } = await supabase
         .from("exams")
         .select("*")
+        .eq("school_id", staff.school_id)
         .order("created_at", { ascending: false });
 
+      if (queryErr) { setError("Failed to load exams"); setLoading(false); return; }
       setExams(data || []);
       setLoading(false);
     }
@@ -89,7 +103,13 @@ export default function ExamsPage() {
         }
       />
 
-      {loading ? (
+      {error ? (
+        <Card className="border-danger bg-danger/5">
+          <CardContent className="p-4">
+            <p className="text-danger font-medium">{error}</p>
+          </CardContent>
+        </Card>
+      ) : loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-12 bg-paper-raised rounded-lg animate-skeleton" />

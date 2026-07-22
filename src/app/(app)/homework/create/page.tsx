@@ -7,7 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-import { CheckCircle, FileText } from "lucide-react";
+import { CheckCircle, FileText, AlertTriangle } from "lucide-react";
+import { z } from "zod";
+
+const homeworkSchema = z.object({
+  sectionId: z.string().min(1, "Please select a section"),
+  subjectId: z.string().min(1, "Please select a subject"),
+  title: z.string().min(1, "Title is required"),
+});
 
 export default function CreateHomeworkPage() {
   const [sections, setSections] = useState<{ id: string; name: string; class_name: string }[]>([]);
@@ -19,6 +26,7 @@ export default function CreateHomeworkPage() {
   const [dueDate, setDueDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function load() {
@@ -34,7 +42,14 @@ export default function CreateHomeworkPage() {
   }, []);
 
   async function handleCreate() {
-    if (!sectionId || !subjectId || !title) return;
+    const result = homeworkSchema.safeParse({ sectionId, subjectId, title });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach((e) => { fieldErrors[e.path[0] as string] = e.message; });
+      setValidationErrors(fieldErrors);
+      return;
+    }
+    setValidationErrors({});
     setLoading(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -74,21 +89,24 @@ export default function CreateHomeworkPage() {
         <CardContent className="space-y-4">
           <div>
             <Label className="text-ink">Section</Label>
-            <select value={sectionId} onChange={(e) => setSectionId(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink">
+            <select value={sectionId} onChange={(e) => { setSectionId(e.target.value); setValidationErrors((p) => ({ ...p, sectionId: "" })); }} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink">
               <option value="">Select section...</option>
               {sections.map((s) => <option key={s.id} value={s.id}>{s.class_name} — {s.name}</option>)}
             </select>
+            {validationErrors.sectionId && <p className="text-xs text-danger mt-1">{validationErrors.sectionId}</p>}
           </div>
           <div>
             <Label className="text-ink">Subject</Label>
-            <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink">
+            <select value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setValidationErrors((p) => ({ ...p, subjectId: "" })); }} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink">
               <option value="">Select subject...</option>
               {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
+            {validationErrors.subjectId && <p className="text-xs text-danger mt-1">{validationErrors.subjectId}</p>}
           </div>
           <div>
             <Label className="text-ink">Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Chapter 5 Exercises" className="mt-1.5" />
+            <Input value={title} onChange={(e) => { setTitle(e.target.value); setValidationErrors((p) => ({ ...p, title: "" })); }} placeholder="Chapter 5 Exercises" className="mt-1.5" />
+            {validationErrors.title && <p className="text-xs text-danger mt-1">{validationErrors.title}</p>}
           </div>
           <div>
             <Label className="text-ink">Description</Label>

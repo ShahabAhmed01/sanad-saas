@@ -1,17 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const registered = searchParams.get("registered") === "true";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -61,6 +64,12 @@ export default function LoginPage() {
             Sign in to your school&apos;s dashboard
           </p>
 
+          {registered && (
+            <div className="bg-success/10 text-success text-sm p-3 rounded-lg mb-4">
+              Account created! Please sign in with your credentials.
+            </div>
+          )}
+
           {error && (
             <div className="bg-danger/10 text-danger text-sm p-3 rounded-lg mb-4">
               {error}
@@ -96,7 +105,12 @@ export default function LoginPage() {
             </div>
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-sm text-slate">
-                <input type="checkbox" className="rounded border-slate-light" />
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded border-slate-light"
+                />
                 Remember me
               </label>
               <Link
@@ -128,5 +142,17 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-paper flex items-center justify-center px-4">
+        <div className="text-center text-slate">Loading...</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

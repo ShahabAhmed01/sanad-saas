@@ -51,7 +51,11 @@ function formatDateShort(dateStr: string): string {
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Tomorrow";
   if (diffDays <= 7) return `In ${diffDays} days`;
-  return date.toLocaleDateString("en-PK", { month: "short", day: "numeric" });
+  try {
+    return date.toLocaleDateString("en-PK", { month: "short", day: "numeric" });
+  } catch {
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
 }
 
 function getTimeAgo(dateStr: string): string {
@@ -99,7 +103,8 @@ export default function DashboardPage() {
 
       if (!staff) return;
       const schoolId = staff.school_id;
-      setSchoolName(((staff.schools as { name: string }[])?.[0])?.name || "Your School");
+      const schoolData = Array.isArray(staff.schools) ? (staff.schools as { name: string }[])[0] : null;
+      setSchoolName(schoolData?.name || "Your School");
 
       // Parallel fetch all stats
       const [studentsRes, staffRes, feesRes, attendanceRes, pendingFeesRes] = await Promise.all([
@@ -166,10 +171,10 @@ export default function DashboardPage() {
       const [examsRes, announcementsRes] = await Promise.all([
         supabase
           .from("exams")
-          .select("id, name, exam_date, status")
+          .select("id, name, starts_on, ends_on, status")
           .eq("school_id", schoolId)
-          .gte("exam_date", today)
-          .order("exam_date", { ascending: true })
+          .gte("ends_on", today)
+          .order("starts_on", { ascending: true })
           .limit(3),
         supabase
           .from("announcements")
@@ -187,7 +192,7 @@ export default function DashboardPage() {
             id: exam.id,
             type: "exam",
             title: exam.name,
-            date: formatDateShort(exam.exam_date),
+            date: formatDateShort(exam.starts_on),
           });
         }
       }
@@ -286,12 +291,23 @@ export default function DashboardPage() {
     return "Good evening";
   };
 
-  const today = new Date().toLocaleDateString("en-PK", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const today = (() => {
+    try {
+      return new Date().toLocaleDateString("en-PK", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+  })();
 
   return (
     <div className="space-y-6">
@@ -330,7 +346,7 @@ export default function DashboardPage() {
                 {stat.title}
               </CardTitle>
               <div className={`w-9 h-9 rounded-xl ${stat.bg} flex items-center justify-center`}>
-                <stat.icon className={`h-4.5 w-4.5 ${stat.color}`} />
+                <stat.icon className={`h-5 w-5 ${stat.color}`} />
               </div>
             </CardHeader>
             <CardContent>

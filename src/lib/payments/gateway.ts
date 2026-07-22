@@ -204,17 +204,38 @@ export class RapidGateway implements PaymentGateway {
   }> {
     // Verify HMAC signature if provided
     if (signature && this.apiKey) {
-      const crypto = await import("crypto");
-      const body = JSON.stringify(payload);
-      const expectedSignature = crypto
-        .createHmac("sha256", this.apiKey)
-        .update(body)
-        .digest("hex");
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(this.apiKey);
+      const body = encoder.encode(JSON.stringify(payload));
 
-      if (!crypto.timingSafeEqual(
-        Buffer.from(signature, "hex"),
-        Buffer.from(expectedSignature, "hex")
-      )) {
+      const cryptoKey = await crypto.subtle.importKey(
+        "raw",
+        keyData,
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+
+      const expectedSigArray = await crypto.subtle.sign("HMAC", cryptoKey, body);
+      const expectedSignature = Array.from(new Uint8Array(expectedSigArray))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
+      // Constant-time comparison
+      const sigBytes = new Uint8Array(
+        signature.match(/.{1,2}/g)?.map((b) => parseInt(b, 16)) || []
+      );
+      const expectedBytes = new Uint8Array(expectedSigArray);
+
+      if (sigBytes.length !== expectedBytes.length) {
+        throw new Error("Invalid webhook signature");
+      }
+
+      let mismatch = 0;
+      for (let i = 0; i < sigBytes.length; i++) {
+        mismatch |= sigBytes[i] ^ expectedBytes[i];
+      }
+      if (mismatch) {
         throw new Error("Invalid webhook signature");
       }
     }

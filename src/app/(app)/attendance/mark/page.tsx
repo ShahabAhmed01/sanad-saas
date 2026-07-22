@@ -46,9 +46,19 @@ export default function MarkAttendancePage() {
   useEffect(() => {
     async function loadSections() {
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: staff } = await supabase
+        .from("staff")
+        .select("school_id")
+        .eq("id", user.id)
+        .single();
+      if (!staff) return;
+
       const { data } = await supabase
         .from("sections")
         .select("id, name, classes!inner(name)")
+        .eq("classes.school_id", staff.school_id)
         .order("name");
       setSections((data || []).map((s: { id: string; name: string; classes: { name: string }[] }) => ({
         id: s.id,

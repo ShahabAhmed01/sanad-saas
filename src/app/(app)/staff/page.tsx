@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Users, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -42,15 +43,28 @@ export default function StaffPage() {
   const router = useRouter();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadStaff() {
       const supabase = createClient();
-      const { data } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setError("Not authenticated"); setLoading(false); return; }
+
+      const { data: currentStaff, error: staffErr } = await supabase
+        .from("staff")
+        .select("school_id")
+        .eq("id", user.id)
+        .single();
+      if (staffErr || !currentStaff) { setError("Failed to load school info"); setLoading(false); return; }
+
+      const { data, error: queryErr } = await supabase
         .from("staff")
         .select("*")
+        .eq("school_id", currentStaff.school_id)
         .order("created_at", { ascending: false });
 
+      if (queryErr) { setError("Failed to load staff"); setLoading(false); return; }
       setStaff(data || []);
       setLoading(false);
     }
@@ -103,7 +117,13 @@ export default function StaffPage() {
         }
       />
 
-      {loading ? (
+      {error ? (
+        <Card className="border-danger bg-danger/5">
+          <CardContent className="p-4">
+            <p className="text-danger font-medium">{error}</p>
+          </CardContent>
+        </Card>
+      ) : loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div
