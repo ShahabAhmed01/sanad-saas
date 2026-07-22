@@ -12,10 +12,10 @@ import {
   MessageSquare,
   Calendar,
   BookOpen,
-  Menu,
 } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { createClient } from "@/lib/supabase/server";
+import { MobileNav } from "@/components/mobile-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -164,30 +164,7 @@ export default async function LandingPage() {
           </div>
 
           {/* Mobile hamburger */}
-          <details className="md:hidden relative">
-            <summary className="list-none cursor-pointer p-2 rounded-lg hover:bg-slate-light/50 transition-colors" aria-label="Menu">
-              <Menu className="h-5 w-5 text-ink" />
-            </summary>
-            <div className="absolute right-0 top-full mt-2 w-56 bg-paper-raised rounded-xl border border-slate-light shadow-xl p-4 z-50">
-              <nav className="flex flex-col gap-3 text-sm text-slate">
-                <a href="#features" className="hover:text-ink transition-colors py-1.5" onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}>Features</a>
-                <a href="#pricing" className="hover:text-ink transition-colors py-1.5" onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}>Pricing</a>
-                <a href="#faq" className="hover:text-ink transition-colors py-1.5" onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}>FAQ</a>
-              </nav>
-              <div className="border-t border-slate-light mt-3 pt-3 flex flex-col gap-2">
-                <Link href="/login" onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}>
-                  <Button variant="ghost" className="w-full justify-center text-ink">
-                    Log in
-                  </Button>
-                </Link>
-                <Link href="/signup" onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}>
-                  <Button className="w-full justify-center bg-accent hover:bg-accent/90 text-white">
-                    Start free trial
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </details>
+          <MobileNav />
         </div>
       </header>
 
