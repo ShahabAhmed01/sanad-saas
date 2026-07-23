@@ -51,9 +51,8 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
         ? JSON.stringify({ old: entry.oldValue, new: entry.newValue })
         : null,
     });
-  } catch (error) {
+  } catch {
     // Audit logging should never crash the app
-    console.error("Audit log failed:", error);
   }
 }
 

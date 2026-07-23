@@ -3,33 +3,35 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Keyboard } from "lucide-react";
+import { useI18n } from "@/i18n/provider";
 
-const shortcuts = [
-  { category: "Navigation", items: [
-    { keys: ["Cmd", "K"], description: "Open command palette" },
-    { keys: ["Cmd", "/"], description: "Show keyboard shortcuts" },
-    { keys: ["Esc"], description: "Close modal/palette" },
+const shortcutKeys = [
+  { categoryKey: "keyboardShortcuts.navigation", items: [
+    { keys: ["Cmd", "K"], descriptionKey: "keyboardShortcuts.openCommandPalette" },
+    { keys: ["Cmd", "/"], descriptionKey: "keyboardShortcuts.showKeyboardShortcuts" },
+    { keys: ["Esc"], descriptionKey: "keyboardShortcuts.closeModal" },
   ]},
-  { category: "Attendance", items: [
-    { keys: ["Cmd", "A"], description: "Mark attendance" },
-    { keys: ["Cmd", "Shift", "A"], description: "Mark all present" },
+  { categoryKey: "keyboardShortcuts.attendance", items: [
+    { keys: ["Cmd", "A"], descriptionKey: "keyboardShortcuts.markAttendance" },
+    { keys: ["Cmd", "Shift", "A"], descriptionKey: "keyboardShortcuts.markAllPresent" },
   ]},
-  { category: "Students", items: [
-    { keys: ["Cmd", "N"], description: "Add new student" },
-    { keys: ["Cmd", "I"], description: "Import CSV" },
+  { categoryKey: "keyboardShortcuts.students", items: [
+    { keys: ["Cmd", "N"], descriptionKey: "keyboardShortcuts.addNewStudent" },
+    { keys: ["Cmd", "I"], descriptionKey: "keyboardShortcuts.importCSV" },
   ]},
-  { category: "Fees", items: [
-    { keys: ["Cmd", "P"], description: "Collect payment" },
-    { keys: ["Cmd", "G"], description: "Generate invoices" },
+  { categoryKey: "keyboardShortcuts.fees", items: [
+    { keys: ["Cmd", "P"], descriptionKey: "keyboardShortcuts.collectPayment" },
+    { keys: ["Cmd", "G"], descriptionKey: "keyboardShortcuts.generateInvoices" },
   ]},
-  { category: "General", items: [
-    { keys: ["Cmd", "S"], description: "Save changes" },
-    { keys: ["Cmd", "Shift", "D"], description: "Go to dashboard" },
-    { keys: ["?"], description: "Show this dialog" },
+  { categoryKey: "keyboardShortcuts.general", items: [
+    { keys: ["Cmd", "S"], descriptionKey: "keyboardShortcuts.saveChanges" },
+    { keys: ["Cmd", "Shift", "D"], descriptionKey: "keyboardShortcuts.goToDashboard" },
+    { keys: ["?"], descriptionKey: "keyboardShortcuts.showThisDialog" },
   ]},
 ];
 
 export function KeyboardShortcuts() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -46,13 +48,21 @@ export function KeyboardShortcuts() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
+  const shortcuts = shortcutKeys.map((group) => ({
+    category: t(group.categoryKey),
+    items: group.items.map((item) => ({
+      keys: item.keys,
+      description: t(item.descriptionKey),
+    })),
+  }));
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Keyboard className="h-5 w-5" />
-            Keyboard Shortcuts
+            {t("keyboardShortcuts.title")}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 max-h-[60vh] overflow-y-auto">

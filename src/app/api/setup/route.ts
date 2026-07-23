@@ -3,23 +3,44 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const SETUP_TOKEN = process.env.SETUP_TOKEN;
 
+// Constant-time string comparison to prevent timing attacks
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 export async function POST(request: Request) {
   const admin = createAdminClient();
 
   const { action, email, password, fullName, token } = await request.json();
 
-  // Auth guard: require setup token for admin creation
-  if (action === "create-admin") {
-    if (!SETUP_TOKEN || token !== SETUP_TOKEN) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+  // Require setup token for ALL actions — no unauthenticated probing allowed
+  if (!SETUP_TOKEN || !token || !safeCompare(token, SETUP_TOKEN)) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401 }
+    );
   }
 
   switch (action) {
     case "create-admin": {
+      // Check if platform admin already exists — disable after first use
+      const { data: existingAdmins } = await admin
+        .from("platform_admins")
+        .select("id")
+        .limit(1);
+
+      if (existingAdmins && existingAdmins.length > 0) {
+        return NextResponse.json(
+          { error: "Platform admin already exists. This endpoint is disabled." },
+          { status: 403 }
+        );
+      }
+
       // Create platform admin auth user
       const { data: authData, error: authError } =
         await admin.auth.admin.createUser({
@@ -53,7 +74,6 @@ export async function POST(request: Request) {
     }
 
     case "check-tables": {
-      // Check if tables exist by querying a known table
       const { error } = await admin
         .from("schools")
         .select("id")

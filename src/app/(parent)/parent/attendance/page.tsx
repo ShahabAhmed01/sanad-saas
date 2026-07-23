@@ -7,6 +7,7 @@ import { AlertCircle, CalendarCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useI18n } from "@/i18n/provider";
 
 interface AttendanceRecord {
   id: string;
@@ -59,6 +60,7 @@ async function fetchAttendance(childId: string | null): Promise<AttendanceRecord
 }
 
 function ParentAttendanceContent() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const childId = searchParams.get("child");
 
@@ -72,7 +74,7 @@ function ParentAttendanceContent() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-10 w-10 text-danger mb-3" />
-        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
         <p className="text-xs text-slate mt-1">{error.message}</p>
       </div>
     );
@@ -80,7 +82,7 @@ function ParentAttendanceContent() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Attendance" description="Your child's attendance history" />
+      <PageHeader title={t("parent.attendance")} description={t("parent.childAttendance")} />
 
       {loading ? (
         <div className="space-y-2">
@@ -89,7 +91,7 @@ function ParentAttendanceContent() {
           ))}
         </div>
       ) : records.length === 0 ? (
-        <EmptyState icon={CalendarCheck} title="No attendance records" description="No attendance has been recorded yet." />
+        <EmptyState icon={CalendarCheck} title={t("common.noRecordsFound")} description={t("common.noData")} />
       ) : (
         <div className="space-y-2">
           {records.map((r) => (

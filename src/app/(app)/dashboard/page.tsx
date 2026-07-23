@@ -31,8 +31,10 @@ import {
   Legend,
 } from "recharts";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
+import { useI18n } from "@/i18n/provider";
 
 export default function DashboardPage() {
+  const { t } = useI18n();
   const { data, isLoading, error } = useDashboardData();
 
   const stats = data?.stats || {
@@ -51,50 +53,50 @@ export default function DashboardPage() {
 
   const statCards = [
     {
-      title: "Total Students",
+      title: t("dashboard.totalStudents"),
       value: isLoading ? null : String(stats.totalStudents),
       icon: GraduationCap,
       color: "text-accent",
       bg: "bg-accent/10",
-      trend: stats.totalStudents > 0 ? `${stats.totalStudents} enrolled` : "No students",
+      trend: stats.totalStudents > 0 ? `${stats.totalStudents} ${t("dashboard.enrolled")}` : t("dashboard.noStudents"),
       trendUp: stats.totalStudents > 0,
     },
     {
-      title: "Total Staff",
+      title: t("dashboard.totalStaff"),
       value: isLoading ? null : String(stats.totalStaff),
       icon: Users,
       color: "text-success",
       bg: "bg-success/10",
-      trend: stats.totalStaff > 0 ? `${stats.totalStaff} active` : "No staff",
+      trend: stats.totalStaff > 0 ? `${stats.totalStaff} ${t("dashboard.active")}` : t("dashboard.noStaff"),
       trendUp: stats.totalStaff > 0,
     },
     {
-      title: "Today's Attendance",
+      title: t("dashboard.todayAttendance"),
       value: isLoading ? null : stats.todayAttendance > 0 ? `${stats.todayAttendance}` : "0",
       icon: CalendarCheck,
       color: "text-accent",
       bg: "bg-accent/10",
-      trend: stats.todayAttendance > 0 ? "Recorded" : "Pending",
+      trend: stats.todayAttendance > 0 ? t("dashboard.recorded") : t("dashboard.pending"),
       trendUp: stats.todayAttendance > 0,
     },
     {
-      title: "Fee Collection",
+      title: t("dashboard.feeCollection"),
       value: isLoading ? null : stats.totalFeeCollection > 0 ? `Rs ${stats.totalFeeCollection.toLocaleString()}` : "Rs 0",
       icon: Banknote,
       color: "text-success",
       bg: "bg-success/10",
-      trend: stats.pendingFees > 0 ? `${stats.pendingFees} pending` : "All clear",
+      trend: stats.pendingFees > 0 ? `${stats.pendingFees} ${t("dashboard.pending")}` : t("dashboard.allClear"),
       trendUp: stats.pendingFees === 0,
     },
   ];
 
   const quickActions = [
-    { label: "Mark Attendance", href: "/attendance/mark", icon: CalendarCheck, color: "bg-accent/10 text-accent" },
-    { label: "Add Student", href: "/students", icon: GraduationCap, color: "bg-success/10 text-success" },
-    { label: "Collect Payment", href: "/fees/collect", icon: Banknote, color: "bg-accent/10 text-accent" },
-    { label: "Create Exam", href: "/exams/create", icon: FileText, color: "bg-success/10 text-success" },
-    { label: "View Reports", href: "/exams/report-cards", icon: TrendingUp, color: "bg-accent/10 text-accent" },
-    { label: "Invite Staff", href: "/staff/invite", icon: Users, color: "bg-success/10 text-success" },
+    { label: t("dashboard.markAttendance"), href: "/attendance/mark", icon: CalendarCheck, color: "bg-accent/10 text-accent" },
+    { label: t("dashboard.addStudent"), href: "/students", icon: GraduationCap, color: "bg-success/10 text-success" },
+    { label: t("dashboard.collectFee"), href: "/fees/collect", icon: Banknote, color: "bg-accent/10 text-accent" },
+    { label: t("dashboard.createExam"), href: "/exams/create", icon: FileText, color: "bg-success/10 text-success" },
+    { label: t("dashboard.viewReports"), href: "/exams/report-cards", icon: TrendingUp, color: "bg-accent/10 text-accent" },
+    { label: t("dashboard.inviteStaff"), href: "/staff/invite", icon: Users, color: "bg-success/10 text-success" },
   ];
 
   const getActivityIcon = (type: string) => {
@@ -119,9 +121,11 @@ export default function DashboardPage() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
+    let timeOfDay: string;
+    if (hour < 12) timeOfDay = "morning";
+    else if (hour < 17) timeOfDay = "afternoon";
+    else timeOfDay = "evening";
+    return t("dashboard.greeting").replace("{timeOfDay}", timeOfDay);
   };
 
   const today = (() => {
@@ -146,8 +150,8 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-10 w-10 text-danger mb-3" />
-        <p className="text-sm font-medium text-ink">Failed to load dashboard</p>
-        <p className="text-xs text-slate mt-1">Please try refreshing the page</p>
+        <p className="text-sm font-medium text-ink">{t("dashboard.failedToLoad")}</p>
+        <p className="text-xs text-slate mt-1">{t("dashboard.failedToLoadDesc")}</p>
       </div>
     );
   }
@@ -167,13 +171,13 @@ export default function DashboardPage() {
             <Link href="/attendance/mark">
               <Button className="bg-accent hover:bg-accent/90 text-white">
                 <CalendarCheck className="h-4 w-4 mr-2" />
-                Mark Attendance
+                {t("dashboard.markAttendance")}
               </Button>
             </Link>
             <Link href="/fees/collect">
               <Button variant="outline">
                 <Banknote className="h-4 w-4 mr-2" />
-                Collect Fee
+                {t("dashboard.collectFee")}
               </Button>
             </Link>
           </div>
@@ -220,7 +224,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2 border-slate-light">
           <CardHeader>
             <CardTitle className="text-lg font-display text-ink">
-              Quick Actions
+              {t("dashboard.quickActions")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -245,10 +249,10 @@ export default function DashboardPage() {
         <Card className="border-slate-light">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg font-display text-ink">
-              Recent Activity
+              {t("dashboard.recentActivity")}
             </CardTitle>
             <Link href="/audit" className="text-xs text-accent hover:underline">
-              View all
+              {t("common.viewAll")}
             </Link>
           </CardHeader>
           <CardContent>
@@ -293,7 +297,7 @@ export default function DashboardPage() {
         <Card className="border-slate-light">
           <CardHeader>
             <CardTitle className="text-lg font-display text-ink">
-              Upcoming
+              {t("dashboard.upcoming")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -320,7 +324,7 @@ export default function DashboardPage() {
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <CalendarDays className="h-8 w-8 text-slate-light mb-2" />
-                <p className="text-sm text-slate">No upcoming events</p>
+                <p className="text-sm text-slate">{t("dashboard.noUpcomingEvents")}</p>
               </div>
             )}
           </CardContent>
@@ -330,7 +334,7 @@ export default function DashboardPage() {
         <Card className="border-slate-light">
           <CardHeader>
             <CardTitle className="text-lg font-display text-ink">
-              Alerts
+              {t("dashboard.alerts")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -343,9 +347,9 @@ export default function DashboardPage() {
                   <AlertCircle className="h-5 w-5 text-danger shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-ink">
-                      {stats.pendingFees} unpaid fee{stats.pendingFees > 1 ? "s" : ""}
+                      {stats.pendingFees} {t("dashboard.unpaidFees").replace("{count}", String(stats.pendingFees)).replace("{plural}", stats.pendingFees > 1 ? "s" : "")}
                     </p>
-                    <p className="text-xs text-slate">Click to view and send reminders</p>
+                    <p className="text-xs text-slate">{t("dashboard.clickToViewReminders")}</p>
                   </div>
                   <ArrowRight className="h-4 w-4 text-slate" />
                 </Link>
@@ -355,8 +359,8 @@ export default function DashboardPage() {
                 <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mb-3">
                   <CheckCircle2 className="h-6 w-6 text-success" />
                 </div>
-                <p className="text-sm font-medium text-ink">All clear!</p>
-                <p className="text-xs text-slate">No pending alerts</p>
+                <p className="text-sm font-medium text-ink">{t("dashboard.allClear")}</p>
+                <p className="text-xs text-slate">{t("dashboard.noPendingAlerts")}</p>
               </div>
             )}
           </CardContent>
@@ -369,7 +373,7 @@ export default function DashboardPage() {
         <Card className="border-slate-light">
           <CardHeader>
             <CardTitle className="text-lg font-display text-ink">
-              Attendance This Week
+              {t("dashboard.attendanceThisWeek")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -400,14 +404,14 @@ export default function DashboardPage() {
                       }}
                     />
                     <Legend />
-                    <Bar dataKey="present" name="Present" fill="var(--color-success)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="absent" name="Absent" fill="var(--color-danger)" radius={[4, 4, 0, 0]} opacity={0.7} />
+                    <Bar dataKey="present" name={t("dashboard.present")} fill="var(--color-success)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="absent" name={t("dashboard.absent")} fill="var(--color-danger)" radius={[4, 4, 0, 0]} opacity={0.7} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (
               <div className="h-64 flex items-center justify-center text-sm text-slate">
-                No attendance data yet
+                {t("dashboard.noAttendanceData")}
               </div>
             )}
           </CardContent>
@@ -417,7 +421,7 @@ export default function DashboardPage() {
         <Card className="border-slate-light">
           <CardHeader>
             <CardTitle className="text-lg font-display text-ink">
-              Fee Collection Trend
+              {t("dashboard.feeCollectionTrend")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -449,13 +453,13 @@ export default function DashboardPage() {
                       formatter={(value) => [`PKR ${Number(value).toLocaleString()}`, ""]}
                     />
                     <Legend />
-                    <Line type="monotone" dataKey="collected" name="Collected" stroke="var(--color-accent)" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="collected" name={t("dashboard.collected")} stroke="var(--color-accent)" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             ) : (
               <div className="h-64 flex items-center justify-center text-sm text-slate">
-                No fee data yet
+                {t("dashboard.noFeeData")}
               </div>
             )}
           </CardContent>

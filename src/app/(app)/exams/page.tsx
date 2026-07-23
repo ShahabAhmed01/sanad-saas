@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface Exam {
   id: string;
@@ -43,6 +44,7 @@ async function fetchExams(schoolId: string): Promise<Exam[]> {
 export default function ExamsPage() {
   const router = useRouter();
   const schoolId = useSchoolId();
+  const { t } = useI18n();
 
   const { data: exams = [], isLoading: loading, error: queryError } = useQuery({
     queryKey: queryKeys.school.exams(schoolId),
@@ -53,10 +55,10 @@ export default function ExamsPage() {
   const error = queryError ? queryError.message : null;
 
   const columns = [
-    { key: "name", header: "Exam Name" },
+    { key: "name", header: t("exams.exam_name") },
     {
       key: "starts_on",
-      header: "Start Date",
+      header: t("exams.start_date"),
       render: (item: Exam) =>
         item.starts_on
           ? new Date(item.starts_on).toLocaleDateString("en-PK")
@@ -64,7 +66,7 @@ export default function ExamsPage() {
     },
     {
       key: "ends_on",
-      header: "End Date",
+      header: t("exams.end_date"),
       render: (item: Exam) =>
         item.ends_on
           ? new Date(item.ends_on).toLocaleDateString("en-PK")
@@ -72,14 +74,14 @@ export default function ExamsPage() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t("common.status"),
       render: (item: Exam) => (
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
             statusColors[item.status] || "bg-slate/10 text-slate"
           }`}
         >
-          {item.status.replace("_", " ")}
+          {t(`exams.${item.status}`)}
         </span>
       ),
     },
@@ -87,15 +89,15 @@ export default function ExamsPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Exams" }]} />
+      <Breadcrumbs items={[{ label: t("nav.exams") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Exams & Results"
-        description="Schedule exams, manage marks, and generate report cards"
+        title={t("exams.title")}
+        description={t("exams.description")}
         action={
           <Button className="bg-accent hover:bg-accent/90 text-white">
             <Plus className="h-4 w-4 mr-2" />
-            Create Exam
+            {t("exams.create_exam")}
           </Button>
         }
       />
@@ -115,16 +117,16 @@ export default function ExamsPage() {
       ) : exams.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title="No exams scheduled"
-          description="Create your first exam to start tracking student performance."
-          action={{ label: "Create Exam", onClick: () => router.push("/exams/create") }}
+          title={t("exams.no_exams")}
+          description={t("exams.no_exams_description")}
+          action={{ label: t("exams.create_exam"), onClick: () => router.push("/exams/create") }}
         />
       ) : (
         <DataTable
           data={exams}
           columns={columns}
           searchKeys={["name", "status"]}
-          searchPlaceholder="Search by exam name..."
+          searchPlaceholder={t("exams.search_placeholder")}
         />
       )}
     </div>

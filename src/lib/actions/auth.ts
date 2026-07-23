@@ -23,10 +23,11 @@ export async function signupSchool(input: SignupInput) {
   const admin = createAdminClient();
 
   // 1. Create auth user
+  // email_confirm: false triggers Supabase to send a verification email
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
     email: validated.email,
     password: validated.password,
-    email_confirm: true,
+    email_confirm: false,
   });
 
   if (authError) {
@@ -108,6 +109,24 @@ export async function signupSchool(input: SignupInput) {
   return { success: true, schoolId: school.id };
 }
 
+function generateSecurePassword(length = 16): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  // Ensure at least one of each type for password policy compliance
+  const required = ["A", "a", "1", "!"];
+  let password = Array.from(array).map((b) => chars[b % chars.length]).join("");
+  // Force first 4 chars to be one of each required type
+  password = required.join("") + password.slice(4);
+  // Shuffle using Fisher-Yates
+  const pwArray = password.split("");
+  for (let i = pwArray.length - 1; i > 0; i--) {
+    const j = Math.floor(crypto.getRandomValues(new Uint32Array(1))[0] / (0xFFFFFFFF + 1) * (i + 1));
+    [pwArray[i], pwArray[j]] = [pwArray[j], pwArray[i]];
+  }
+  return pwArray.join("");
+}
+
 export async function inviteStaff(input: {
   email: string;
   name: string;
@@ -116,8 +135,8 @@ export async function inviteStaff(input: {
 }) {
   const admin = createAdminClient();
 
-  // 1. Create auth user with temporary password
-  const tempPassword = crypto.randomUUID().slice(0, 12) + "A1!";
+  // 1. Create auth user with a properly random temporary password
+  const tempPassword = generateSecurePassword();
 
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
     email: input.email,
@@ -129,13 +148,14 @@ export async function inviteStaff(input: {
     return { error: authError.message };
   }
 
-  // 2. Create staff record
+  // 2. Create staff record with must_change_password flag
   const { error: staffError } = await admin.from("staff").insert({
     id: authData.user.id,
     school_id: input.schoolId,
     full_name: input.name,
     role: input.role,
     status: "active",
+    must_change_password: true,
   });
 
   if (staffError) {

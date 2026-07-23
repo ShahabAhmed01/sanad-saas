@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useUserId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface LeaveRequest {
   id: string;
@@ -29,17 +30,19 @@ const statusColors: Record<string, string> = {
 
 async function fetchLeaves(userId: string): Promise<LeaveRequest[]> {
   const supabase = createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("leave_requests")
     .select("*")
     .eq("staff_id", userId)
     .order("created_at", { ascending: false });
+  if (error) throw error;
   return data || [];
 }
 
 export default function LeavePage() {
   const router = useRouter();
   const userId = useUserId();
+  const { t } = useI18n();
 
   const { data: leaves = [], isLoading: loading, error } = useQuery({
     queryKey: queryKeys.user.leaves(userId),
@@ -49,15 +52,15 @@ export default function LeavePage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Leave Requests" }]} />
+      <Breadcrumbs items={[{ label: t("nav.leave") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Leave Requests"
-        description="Submit and track your leave requests"
+        title={t("leave.title")}
+        description={t("leave.description")}
         action={
           <Button className="bg-accent hover:bg-accent/90 text-white">
             <Plus className="h-4 w-4 mr-2" />
-            Request Leave
+            {t("leave.request_leave")}
           </Button>
         }
       />
@@ -65,7 +68,7 @@ export default function LeavePage() {
       {error ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="h-10 w-10 text-danger mb-3" />
-          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-sm font-medium text-ink">{t("common.failed_to_load")}</p>
           <p className="text-xs text-slate mt-1">{error.message}</p>
         </div>
       ) : loading ? (
@@ -77,9 +80,9 @@ export default function LeavePage() {
       ) : leaves.length === 0 ? (
         <EmptyState
           icon={CalendarCheck}
-          title="No leave requests"
-          description="Submit a leave request when you need time off."
-          action={{ label: "Request Leave", onClick: () => router.push("/leave/pending") }}
+          title={t("leave.no_requests")}
+          description={t("leave.no_requests_description")}
+          action={{ label: t("leave.request_leave"), onClick: () => router.push("/leave/pending") }}
         />
       ) : (
         <div className="space-y-3">
@@ -91,7 +94,7 @@ export default function LeavePage() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-ink capitalize">
-                    {leave.leave_type} Leave
+                    {t("leave.typeLeave", { type: leave.leave_type })}
                   </span>
                   <span
                     className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${

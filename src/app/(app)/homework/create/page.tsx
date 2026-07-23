@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSchoolId, useUserId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 const homeworkSchema = z.object({
   sectionId: z.string().min(1, "Please select a section"),
@@ -29,6 +30,7 @@ export default function CreateHomeworkPage() {
   const queryClient = useQueryClient();
   const schoolId = useSchoolId();
   const userId = useUserId();
+  const { t } = useI18n();
   const [sectionId, setSectionId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [title, setTitle] = useState("");
@@ -82,13 +84,13 @@ export default function CreateHomeworkPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.school.homework(schoolId) });
-      toast.success("Homework assigned", { description: `"${title}" assigned successfully` });
+      toast.success(t("homework.toast_assigned"), { description: t("homework.assigned_success") });
       setSuccess(true);
       setTimeout(() => { setSuccess(false); setTitle(""); setDescription(""); setDueDate(""); }, 2000);
       router.push("/homework");
     },
     onError: (error) => {
-      toast.error("Failed to create homework", { description: error.message });
+      toast.error(t("homework.toast_failed"), { description: error.message });
     },
   });
 
@@ -106,50 +108,50 @@ export default function CreateHomeworkPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Homework", href: "/homework" }, { label: "Create Homework" }]} />
+      <Breadcrumbs items={[{ label: t("nav.homework"), href: "/homework" }, { label: t("homework.create_title") }]} />
       <div className="space-y-6">
-      <PageHeader title="Create Homework" description="Assign homework to a class section" />
+      <PageHeader title={t("homework.create_title")} description={t("homework.create_description")} />
 
       {success && (
         <Card className="border-success bg-success/5">
           <CardContent className="p-4 flex items-center gap-3">
             <CheckCircle className="h-5 w-5 text-success" />
-            <p className="font-medium text-ink">Homework assigned!</p>
+            <p className="font-medium text-ink">{t("homework.toast_assigned")}</p>
           </CardContent>
         </Card>
       )}
 
       <Card className="border-slate-light max-w-lg">
         <CardHeader>
-          <CardTitle className="text-lg font-display">New Assignment</CardTitle>
+          <CardTitle className="text-lg font-display">{t("homework.new_assignment")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="section" className="text-ink">Section</Label>
-            <Select id="section" value={sectionId} onChange={(e) => { setSectionId(e.target.value); setValidationErrors((p) => ({ ...p, sectionId: "" })); }} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder="Select section..." options={sections.map((s) => ({ value: s.id, label: `${s.class_name} — ${s.name}` }))} />
+            <Label htmlFor="section" className="text-ink">{t("homework.section")}</Label>
+            <Select id="section" value={sectionId} onChange={(e) => { setSectionId(e.target.value); setValidationErrors((p) => ({ ...p, sectionId: "" })); }} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder={t("homework.create.selectSection")} options={sections.map((s) => ({ value: s.id, label: `${s.class_name} — ${s.name}` }))} />
             {validationErrors.sectionId && <p className="text-xs text-danger mt-1">{validationErrors.sectionId}</p>}
           </div>
           <div>
-            <Label htmlFor="subject" className="text-ink">Subject</Label>
-            <Select id="subject" value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setValidationErrors((p) => ({ ...p, subjectId: "" })); }} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder="Select subject..." options={subjects.map((s) => ({ value: s.id, label: s.name }))} />
+            <Label htmlFor="subject" className="text-ink">{t("homework.subject")}</Label>
+            <Select id="subject" value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setValidationErrors((p) => ({ ...p, subjectId: "" })); }} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder={t("homework.create.selectSubject")} options={subjects.map((s) => ({ value: s.id, label: s.name }))} />
             {validationErrors.subjectId && <p className="text-xs text-danger mt-1">{validationErrors.subjectId}</p>}
           </div>
           <div>
-            <Label htmlFor="title" className="text-ink">Title</Label>
-            <Input id="title" value={title} onChange={(e) => { setTitle(e.target.value); setValidationErrors((p) => ({ ...p, title: "" })); }} placeholder="Chapter 5 Exercises" className="mt-1.5" />
+            <Label htmlFor="title" className="text-ink">{t("homework.title_label")}</Label>
+            <Input id="title" value={title} onChange={(e) => { setTitle(e.target.value); setValidationErrors((p) => ({ ...p, title: "" })); }} placeholder={t("homework.create.titlePlaceholder")} className="mt-1.5" />
             {validationErrors.title && <p className="text-xs text-danger mt-1">{validationErrors.title}</p>}
           </div>
           <div>
-            <Label htmlFor="description" className="text-ink">Description</Label>
-            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional details..." rows={3} className="mt-1.5 flex w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" />
+            <Label htmlFor="description" className="text-ink">{t("homework.description_label")}</Label>
+            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("homework.create.descriptionPlaceholder")} rows={3} className="mt-1.5 flex w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" />
           </div>
           <div>
-            <Label htmlFor="due-date" className="text-ink">Due Date</Label>
+            <Label htmlFor="due-date" className="text-ink">{t("homework.due_date")}</Label>
             <Input id="due-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="mt-1.5" />
           </div>
           <Button onClick={handleCreate} isLoading={createHomework.isPending} disabled={!sectionId || !subjectId || !title} className="w-full bg-accent hover:bg-accent/90 text-white">
             <FileText className="h-4 w-4 mr-2" />
-            Assign Homework
+            {t("homework.assign_homework")}
           </Button>
         </CardContent>
       </Card>

@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface AttendanceRecord {
   id: string;
@@ -36,6 +37,7 @@ async function fetchAttendance(schoolId: string, date: string): Promise<Attendan
 export default function AttendancePage() {
   const router = useRouter();
   const schoolId = useSchoolId();
+  const { t } = useI18n();
   const today = new Date().toISOString().split("T")[0];
 
   const { data: records = [], isLoading: loading, error: queryError } = useQuery({
@@ -55,14 +57,14 @@ export default function AttendancePage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Attendance" }]} />
+      <Breadcrumbs items={[{ label: t("nav.attendance") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Attendance"
-        description={`Tracking for ${new Date().toLocaleDateString("en-PK", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`}
+        title={t("nav.attendance")}
+        description={t("attendance.tracking_for").replace("{date}", new Date().toLocaleDateString("en-PK", { weekday: "long", year: "numeric", month: "long", day: "numeric" }))}
         action={
           <Button className="bg-accent hover:bg-accent/90 text-white">
-            Take Attendance
+            {t("attendance.take_attendance")}
           </Button>
         }
       />
@@ -81,7 +83,7 @@ export default function AttendancePage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card className="border-slate-light">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate">Total</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate">{t("attendance.total")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-ink tabular-nums">{stats.total}</div>
@@ -89,7 +91,7 @@ export default function AttendancePage() {
           </Card>
           <Card className="border-slate-light">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-success">Present</CardTitle>
+              <CardTitle className="text-sm font-medium text-success">{t("attendance.present")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-success tabular-nums">{stats.present}</div>
@@ -97,7 +99,7 @@ export default function AttendancePage() {
           </Card>
           <Card className="border-slate-light">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-danger">Absent</CardTitle>
+              <CardTitle className="text-sm font-medium text-danger">{t("attendance.absent")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-danger tabular-nums">{stats.absent}</div>
@@ -105,7 +107,7 @@ export default function AttendancePage() {
           </Card>
           <Card className="border-slate-light">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-accent">Late</CardTitle>
+              <CardTitle className="text-sm font-medium text-accent">{t("attendance.late")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-accent tabular-nums">{stats.late}</div>
@@ -123,9 +125,9 @@ export default function AttendancePage() {
       ) : records.length === 0 ? (
         <EmptyState
           icon={CalendarCheck}
-          title="No attendance recorded today"
-          description="Select a class to take attendance for today."
-          action={{ label: "Take Attendance", onClick: () => router.push("/attendance/mark") }}
+          title={t("attendance.no_attendance_today")}
+          description={t("attendance.select_class_description")}
+          action={{ label: t("attendance.take_attendance"), onClick: () => router.push("/attendance/mark") }}
         />
       ) : (
         <Card className="border-slate-light">
@@ -140,7 +142,7 @@ export default function AttendancePage() {
                       {record.status === "late" && <Clock className="h-4 w-4 text-accent" />}
                     </div>
                     <span className="text-sm font-medium text-ink capitalize">
-                      {record.status.replace("_", " ")}
+                      {t(`attendance.${record.status}`)}
                     </span>
                   </div>
                   <span className="text-xs text-slate font-mono">{record.student_id.slice(0, 8)}...</span>

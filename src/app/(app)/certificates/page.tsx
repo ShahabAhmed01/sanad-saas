@@ -14,6 +14,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { toast } from "sonner";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface Student {
   id: string;
@@ -36,6 +37,7 @@ async function searchStudentsFn(schoolId: string, search: string): Promise<Stude
 }
 
 export default function CertificatesPage() {
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [certType, setCertType] = useState("bonafide");
@@ -63,14 +65,14 @@ export default function CertificatesPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Certificate issued", { description: `${certType} certificate generated for ${selectedStudent?.full_name}` });
+      toast.success(t("certificates.toast_issued"), { description: `${certType} certificate generated for ${selectedStudent?.full_name}` });
       printCertificate(selectedStudent!, certType);
       queryClient.invalidateQueries({
         queryKey: queryKeys.school.certificates(schoolId),
       });
     },
     onError: (error: Error) => {
-      toast.error("Failed to issue certificate", { description: error.message || "Please try again" });
+      toast.error(t("certificates.toast_issue_failed"), { description: error.message || "Please try again" });
     },
   });
 
@@ -119,15 +121,15 @@ export default function CertificatesPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Certificates" }]} />
+      <Breadcrumbs items={[{ label: t("nav.certificates") }]} />
       <div className="space-y-6">
-      <PageHeader title="Certificates" description="Issue and print student certificates" />
+      <PageHeader title={t("certificates.title")} description={t("certificates.description")} />
 
       <Card className="border-slate-light max-w-lg">
         <CardContent className="p-4 space-y-4">
           <div className="relative">
             <Input
-              placeholder="Search student by name or admission number..."
+              placeholder={t("certificates.search_student")}
               value={search}
               onChange={(e) => { setSearch(e.target.value); if (e.target.value.length >= 2) searchStudentsFn(schoolId, e.target.value); }}
             />
@@ -148,7 +150,7 @@ export default function CertificatesPage() {
           </div>
 
           <div>
-            <Label htmlFor="certificate-type" className="text-ink">Certificate Type</Label>
+            <Label htmlFor="certificate-type" className="text-ink">{t("certificates.certificate_type")}</Label>
             <Select
               id="certificate-type"
               value={certType}
@@ -156,10 +158,10 @@ export default function CertificatesPage() {
               className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink"
               placeholder="Bonafide Certificate"
               options={[
-                { value: "bonafide", label: "Bonafide Certificate" },
-                { value: "character", label: "Character Certificate" },
-                { value: "transfer", label: "Transfer Certificate" },
-                { value: "leaving", label: "Leaving Certificate" },
+                { value: "bonafide", label: t("certificates.bonafide") },
+                { value: "character", label: t("certificates.character") },
+                { value: "transfer", label: t("certificates.transfer") },
+                { value: "leaving", label: t("certificates.leaving") },
               ]}
             />
           </div>
@@ -171,7 +173,7 @@ export default function CertificatesPage() {
             className="w-full bg-accent hover:bg-accent/90 text-white"
           >
             <Award className="h-4 w-4 mr-2" />
-            Issue & Print Certificate
+            {t("certificates.issue_print")}
           </Button>
         </CardContent>
       </Card>

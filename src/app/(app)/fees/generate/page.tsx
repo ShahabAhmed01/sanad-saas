@@ -14,20 +14,24 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { toast } from "sonner";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 async function fetchSections(schoolId: string) {
   const supabase = createClient();
-  const { data } = await supabase.from("sections").select("id, name").eq("classes.school_id", schoolId).order("name");
+  const { data, error } = await supabase.from("sections").select("id, name").eq("classes.school_id", schoolId).order("name");
+  if (error) throw error;
   return data || [];
 }
 
 async function fetchFeeHeads(schoolId: string) {
   const supabase = createClient();
-  const { data } = await supabase.from("fee_heads").select("id, name").eq("school_id", schoolId);
+  const { data, error } = await supabase.from("fee_heads").select("id, name").eq("school_id", schoolId);
+  if (error) throw error;
   return data || [];
 }
 
 export default function GenerateInvoicesPage() {
+  const { t } = useI18n();
   const [selectedClass, setSelectedClass] = useState("");
   const [period, setPeriod] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -114,60 +118,60 @@ export default function GenerateInvoicesPage() {
     },
     onSuccess: (result) => {
       setResult(result);
-      toast.success("Invoices generated", { description: `${result.count} invoices created totaling PKR ${result.total.toLocaleString()}` });
+      toast.success(t("fees.generate.invoicesGenerated", { count: String(result.count) }), { description: t("fees.generate.totalAmount", { amount: result.total.toLocaleString() }) });
       queryClient.invalidateQueries({ queryKey: queryKeys.school.fees(schoolId) });
     },
     onError: (error) => {
-      toast.error("Failed to generate invoices", { description: error.message });
+      toast.error(t("fees.generate.failedToGenerate"), { description: error.message });
     },
   });
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Fees", href: "/fees" }, { label: "Generate Invoices" }]} />
+      <Breadcrumbs items={[{ label: t("fees.title"), href: "/fees" }, { label: t("fees.generate.title") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Generate Invoices"
-        description="Create fee invoices for students in a class"
+        title={t("fees.generate.title")}
+        description={t("fees.generate.description")}
       />
 
       {(classesError || feeHeadsError) && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="h-10 w-10 text-danger mb-3" />
-          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
           <p className="text-xs text-slate mt-1">{(classesError || feeHeadsError)?.message}</p>
         </div>
       )}
 
       <Card className="border-slate-light max-w-lg">
         <CardHeader>
-          <CardTitle className="text-lg font-display">Invoice Details</CardTitle>
+          <CardTitle className="text-lg font-display">{t("fees.generate.invoiceDetails")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="section" className="text-ink">Section</Label>
+            <Label htmlFor="section" className="text-ink">{t("fees.generate.section")}</Label>
             <Select
               id="section"
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
               className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink"
-              placeholder="Select section..."
+              placeholder={t("fees.generate.selectSection")}
               options={classes.map((c) => ({ value: c.id, label: c.name }))}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="period" className="text-ink">Period</Label>
+              <Label htmlFor="period" className="text-ink">{t("fees.generate.period")}</Label>
               <Input
                 id="period"
                 value={period}
                 onChange={(e) => setPeriod(e.target.value)}
-                placeholder="e.g. August 2026"
+                placeholder={t("fees.generate.periodExample")}
                 className="mt-1.5"
               />
             </div>
             <div>
-              <Label htmlFor="due-date" className="text-ink">Due Date</Label>
+              <Label htmlFor="due-date" className="text-ink">{t("fees.generate.dueDate")}</Label>
               <Input
                 id="due-date"
                 type="date"
@@ -180,17 +184,17 @@ export default function GenerateInvoicesPage() {
 
           {feeHeads.length === 0 && (
             <p className="text-xs text-danger">
-              No fee heads configured. Set up fee heads in Settings first.
+              {t("fees.generate.noFeeHeads")}
             </p>
           )}
 
           <Button
-            onClick={() => generateMutation.mutate()}
+            onClick={() => { if (!window.confirm(t("fees.generate.confirmMessage"))) return; generateMutation.mutate(); }}
             isLoading={generateMutation.isPending}
             disabled={!selectedClass || !period || !dueDate || feeHeads.length === 0}
             className="w-full bg-accent hover:bg-accent/90 text-white"
           >
-            Generate Invoices
+            {t("fees.generate.generateBtn")}
           </Button>
         </CardContent>
       </Card>
@@ -201,10 +205,10 @@ export default function GenerateInvoicesPage() {
             <CheckCircle className="h-5 w-5 text-success" />
             <div>
               <p className="font-medium text-ink">
-                {result.count} invoices generated
+                {t("fees.generate.invoicesGenerated", { count: String(result.count) })}
               </p>
               <p className="text-sm text-slate">
-                Total amount: PKR {result.total.toLocaleString()}
+                {t("fees.generate.totalAmount", { amount: result.total.toLocaleString() })}
               </p>
             </div>
           </CardContent>

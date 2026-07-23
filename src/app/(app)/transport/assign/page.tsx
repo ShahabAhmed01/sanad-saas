@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface Route {
   id: string;
@@ -36,6 +37,7 @@ export default function TransportAssignPage() {
   const [success, setSuccess] = useState("");
   const queryClient = useQueryClient();
   const schoolId = useSchoolId();
+  const { t } = useI18n();
 
   const { data: routes = [], error } = useQuery<Route[]>({
     queryKey: queryKeys.school.transport(schoolId),
@@ -82,7 +84,7 @@ export default function TransportAssignPage() {
     },
     onSuccess: () => {
       if (!selectedStudent) return;
-      toast.success("Route assigned", { description: `${selectedStudent.full_name} assigned to transport route` });
+      toast.success(t("transport.studentsAssigned", { count: "1" }), { description: `${selectedStudent.full_name} assigned to transport route` });
       setSuccess(`${selectedStudent.full_name} assigned to route`);
       setSelectedStudent(null);
       setSearch("");
@@ -91,7 +93,7 @@ export default function TransportAssignPage() {
       setTimeout(() => setSuccess(""), 2000);
     },
     onError: (error) => {
-      toast.error("Failed to assign student", { description: error.message });
+      toast.error(t("common.error"), { description: error.message });
     },
   });
 
@@ -99,7 +101,7 @@ export default function TransportAssignPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-10 w-10 text-danger mb-3" />
-        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
         <p className="text-xs text-slate mt-1">{error.message}</p>
       </div>
     );
@@ -107,9 +109,9 @@ export default function TransportAssignPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Transport", href: "/transport" }, { label: "Assign Route" }]} />
+      <Breadcrumbs items={[{ label: t("transport.title"), href: "/transport" }, { label: t("transport.assignRoute") }]} />
       <div className="space-y-6">
-      <PageHeader title="Transport Assignment" description="Assign students to transport routes" />
+      <PageHeader title={t("transport.assignRoute")} description={t("transport.manageRoutes")} />
 
       {success && (
         <Card className="border-success bg-success/5">
@@ -122,12 +124,12 @@ export default function TransportAssignPage() {
 
       <Card className="border-slate-light max-w-lg">
         <CardHeader>
-          <CardTitle className="text-lg font-display">Assign Student to Route</CardTitle>
+          <CardTitle className="text-lg font-display">{t("transport.assignStudents")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="relative">
             <Input
-              placeholder="Search student by name or admission number..."
+              placeholder={t("common.search")}
               value={search}
               onChange={(e) => { setSearch(e.target.value); if (e.target.value.length >= 2) searchStudents(); }}
             />
@@ -148,18 +150,18 @@ export default function TransportAssignPage() {
           </div>
 
           <div>
-            <Label htmlFor="route" className="text-ink">Route</Label>
-            <Select id="route" value={selectedRoute} onChange={(e) => setSelectedRoute(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder="Select route..." options={routes.map((r) => ({ value: r.id, label: `${r.name} (PKR ${Number(r.fare_amount).toLocaleString()}/mo)` }))} />
+            <Label htmlFor="route" className="text-ink">{t("transport.routeName")}</Label>
+            <Select id="route" value={selectedRoute} onChange={(e) => setSelectedRoute(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder={t("common.selectAnOption")} options={routes.map((r) => ({ value: r.id, label: `${r.name} (PKR ${Number(r.fare_amount).toLocaleString()}/mo)` }))} />
           </div>
 
           <div>
-            <Label htmlFor="pickup-stop" className="text-ink">Pickup Stop</Label>
-            <Input id="pickup-stop" value={pickupStop} onChange={(e) => setPickupStop(e.target.value)} placeholder="e.g. Main Road Stop" className="mt-1.5" />
+            <Label htmlFor="pickup-stop" className="text-ink">{t("transport.stops")}</Label>
+            <Input id="pickup-stop" value={pickupStop} onChange={(e) => setPickupStop(e.target.value)} placeholder={t("transport.assign.stopPlaceholder")} className="mt-1.5" />
           </div>
 
           <Button onClick={() => assignMutation.mutate()} isLoading={assignMutation.isPending} disabled={!selectedStudent || !selectedRoute} className="w-full bg-accent hover:bg-accent/90 text-white">
             <Bus className="h-4 w-4 mr-2" />
-            Assign to Route
+            {t("transport.assignRoute")}
           </Button>
         </CardContent>
       </Card>

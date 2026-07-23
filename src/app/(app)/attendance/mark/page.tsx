@@ -13,6 +13,8 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { toast } from "sonner";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { logAuditEvent } from "@/lib/audit-client";
+import { useI18n } from "@/i18n/provider";
 
 interface Section {
   id: string;
@@ -22,13 +24,15 @@ interface Section {
 
 type AttendanceStatus = "present" | "absent" | "late" | "half_day" | "leave";
 
-const statusConfig: Record<AttendanceStatus, { icon: React.ElementType; color: string; bg: string; label: string }> = {
-  present: { icon: Check, color: "text-success", bg: "bg-success/10 border-success", label: "Present" },
-  absent: { icon: X, color: "text-danger", bg: "bg-danger/10 border-danger", label: "Absent" },
-  late: { icon: Clock, color: "text-accent", bg: "bg-accent/10 border-accent", label: "Late" },
-  half_day: { icon: Clock, color: "text-accent", bg: "bg-accent/10 border-accent", label: "Half Day" },
-  leave: { icon: Clock, color: "text-slate", bg: "bg-slate/10 border-slate", label: "Leave" },
-};
+function getStatusConfig(t: (key: string) => string): Record<AttendanceStatus, { icon: React.ElementType; color: string; bg: string; label: string }> {
+  return {
+    present: { icon: Check, color: "text-success", bg: "bg-success/10 border-success", label: t("attendance.present") },
+    absent: { icon: X, color: "text-danger", bg: "bg-danger/10 border-danger", label: t("attendance.absent") },
+    late: { icon: Clock, color: "text-accent", bg: "bg-accent/10 border-accent", label: t("attendance.late") },
+    half_day: { icon: Clock, color: "text-accent", bg: "bg-accent/10 border-accent", label: t("attendance.half_day") },
+    leave: { icon: Clock, color: "text-slate", bg: "bg-slate/10 border-slate", label: t("attendance.leave") },
+  };
+}
 
 async function fetchSections(schoolId: string): Promise<Section[]> {
   const supabase = createClient();
@@ -78,6 +82,7 @@ export default function MarkAttendancePage() {
   const [saved, setSaved] = useState(false);
   const schoolId = useSchoolId();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const today = new Date().toISOString().split("T")[0];
 
   const { data: sections = [], error: sectionsError } = useQuery({
@@ -123,12 +128,20 @@ export default function MarkAttendancePage() {
     },
     onSuccess: () => {
       setSaved(true);
-      toast.success("Attendance saved", { description: `Records updated for ${students.length} students` });
+      toast.success(t("attendance.toast_saved"), { description: t("toast_records_updated").replace("{count}", String(students.length)) });
+      logAuditEvent("attendance_mark", {
+        entityType: "student_attendance",
+        metadata: {
+          section_id: selectedSection,
+          date: today,
+          student_count: students.length,
+        },
+      });
       setTimeout(() => setSaved(false), 2000);
       queryClient.invalidateQueries({ queryKey: queryKeys.school.attendance(schoolId, `${selectedSection}-${today}`) });
     },
     onError: (error: Error) => {
-      toast.error("Failed to save attendance", { description: error.message || "Please try again" });
+      toast.error(t("attendance.toast_failed"), { description: error.message || t("toast_try_again") });
     },
   });
 
@@ -141,10 +154,10 @@ export default function MarkAttendancePage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Attendance", href: "/attendance" }, { label: "Mark Attendance" }]} />
+      <Breadcrumbs items={[{ label: t("nav.attendance"), href: "/attendance" }, { label: t("attendance.mark_attendance") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Mark Attendance"
+        title={t("attendance.mark_attendance")}
         description={new Date().toLocaleDateString("en-PK", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
         action={
           selectedSection && students.length > 0 ? (
@@ -155,11 +168,11 @@ export default function MarkAttendancePage() {
                   const allPresent: Record<string, AttendanceStatus> = {};
                   students.forEach((s) => { allPresent[s.id] = "present"; });
                   setOverrides(allPresent);
-                  toast.success("Marked all present", { description: `${students.length} students set to present` });
+                  toast.success(t("attendance.marked_all_present"), { description: `${students.length} ${t("attendance.students_set_to_present")}` });
                 }}
               >
                 <Check className="h-4 w-4 mr-2" />
-                Mark All Present
+                {t("attendance.mark_all_present")}
               </Button>
               <Button
                 onClick={() => saveMutation.mutate()}
@@ -170,7 +183,7 @@ export default function MarkAttendancePage() {
                 )}
               >
                 <Save className="h-4 w-4 mr-2" />
-                {saved ? "Saved!" : "Save Attendance"}
+                {saved ? t("attendance.saved") : t("attendance.save_attendance")}
               </Button>
             </div>
           ) : undefined
@@ -180,7 +193,7 @@ export default function MarkAttendancePage() {
       {(sectionsError || studentDataError) && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="h-10 w-10 text-danger mb-3" />
-          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-sm font-medium text-ink">{t("attendance.failed_to_load")}</p>
           <p className="text-xs text-slate mt-1">{(sectionsError || studentDataError)?.message}</p>
         </div>
       )}
@@ -188,12 +201,13 @@ export default function MarkAttendancePage() {
       {/* Section Selector */}
       <Card className="border-slate-light">
         <CardContent className="p-4">
-          <label className="text-sm font-medium text-ink block mb-2">Select Class & Section</label>
+          <label htmlFor="section-select" className="text-sm font-medium text-ink block mb-2">{t("attendance.select_class_section")}</label>
           <Select
+            id="section-select"
             value={selectedSection}
             onChange={(e) => setSelectedSection(e.target.value)}
             className="flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink"
-            placeholder="Choose a section..."
+            placeholder={t("attendance.choose_section")}
             options={sections.map((s) => ({ value: s.id, label: `${s.class_name} — ${s.name}` }))}
           />
         </CardContent>
@@ -203,19 +217,19 @@ export default function MarkAttendancePage() {
       {students.length > 0 && (
         <div className="grid grid-cols-4 gap-3">
           <div className="text-center p-3 rounded-lg bg-paper-raised border border-slate-light">
-            <p className="text-xs text-slate">Total</p>
+            <p className="text-xs text-slate">{t("attendance.total")}</p>
             <p className="text-xl font-bold text-ink tabular-nums">{stats.total}</p>
           </div>
           <div className="text-center p-3 rounded-lg bg-success/5 border border-success/20">
-            <p className="text-xs text-success">Present</p>
+            <p className="text-xs text-success">{t("attendance.present")}</p>
             <p className="text-xl font-bold text-success tabular-nums">{stats.present}</p>
           </div>
           <div className="text-center p-3 rounded-lg bg-danger/5 border border-danger/20">
-            <p className="text-xs text-danger">Absent</p>
+            <p className="text-xs text-danger">{t("attendance.absent")}</p>
             <p className="text-xl font-bold text-danger tabular-nums">{stats.absent}</p>
           </div>
           <div className="text-center p-3 rounded-lg bg-accent/5 border border-accent/20">
-            <p className="text-xs text-accent">Late</p>
+            <p className="text-xs text-accent">{t("attendance.late")}</p>
             <p className="text-xl font-bold text-accent tabular-nums">{stats.late}</p>
           </div>
         </div>
@@ -231,13 +245,14 @@ export default function MarkAttendancePage() {
       ) : students.length === 0 && selectedSection ? (
         <Card className="border-slate-light">
           <CardContent className="py-8 text-center">
-            <p className="text-slate">No students in this section</p>
+            <p className="text-slate">{t("attendance.no_students_in_section")}</p>
           </CardContent>
         </Card>
       ) : students.length > 0 ? (
         <div className="space-y-2">
           {students.map((student) => {
             const currentStatus = attendance[student.id] || "present";
+            const statusConfig = getStatusConfig(t);
             return (
               <div
                 key={student.id}

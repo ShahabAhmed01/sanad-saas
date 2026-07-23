@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useQuery } from "@tanstack/react-query";
 import { useSchoolId } from "@/hooks/use-user-profile";
+import { useI18n } from "@/i18n/provider";
 
 interface Route {
   id: string;
@@ -20,6 +21,7 @@ interface Route {
 export default function TransportPage() {
   const router = useRouter();
   const schoolId = useSchoolId();
+  const { t } = useI18n();
 
   const { data: routes = [], isLoading: loading, error } = useQuery<Route[], Error>({
     queryKey: ["transport-routes", schoolId],
@@ -41,17 +43,17 @@ export default function TransportPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-10 w-10 text-danger mb-3" />
-        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
         <p className="text-xs text-slate mt-1">{error.message}</p>
       </div>
     );
   }
 
   const columns = [
-    { key: "name", header: "Route Name" },
+    { key: "name", header: t("transport.routeName") },
     {
       key: "fare_amount",
-      header: "Monthly Fare",
+      header: t("common.amount"),
       className: "text-right",
       render: (item: Route) => (
         <span className="tabular-nums font-medium">
@@ -63,15 +65,15 @@ export default function TransportPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Transport" }]} />
+      <Breadcrumbs items={[{ label: t("transport.title") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Transport"
-        description="Manage routes, vehicles, and student assignments"
+        title={t("transport.title")}
+        description={t("transport.manageRoutes")}
         action={
           <Button className="bg-accent hover:bg-accent/90 text-white">
             <Plus className="h-4 w-4 mr-2" />
-            Add Route
+            {t("transport.addRoute")}
           </Button>
         }
       />
@@ -85,16 +87,16 @@ export default function TransportPage() {
       ) : routes.length === 0 ? (
         <EmptyState
           icon={Bus}
-          title="No transport routes"
-          description="Set up routes and assign vehicles to manage your school's transport system."
-          action={{ label: "Add Route", onClick: () => router.push("/transport/assign") }}
+          title={t("transport.noRoutes")}
+          description={t("transport.addFirstRoute")}
+          action={{ label: t("transport.addRoute"), onClick: () => router.push("/transport/assign") }}
         />
       ) : (
         <DataTable
           data={routes}
           columns={columns}
           searchKeys={["name"]}
-          searchPlaceholder="Search routes..."
+          searchPlaceholder={t("common.search")}
         />
       )}
     </div>

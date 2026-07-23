@@ -10,19 +10,20 @@ import {
   CalendarCheck,
   MoreHorizontal,
 } from "lucide-react";
+import { useI18n } from "@/i18n/provider";
 
 interface BottomNavItem {
-  label: string;
+  labelKey: string;
   href: string;
   icon: React.ElementType;
 }
 
 const defaultBottomNavItems: BottomNavItem[] = [
-  { label: "Home", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Staff", href: "/staff", icon: Users },
-  { label: "Students", href: "/students", icon: GraduationCap },
-  { label: "Attendance", href: "/attendance", icon: CalendarCheck },
-  { label: "More", href: "/more", icon: MoreHorizontal },
+  { labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { labelKey: "nav.staff", href: "/staff", icon: Users },
+  { labelKey: "nav.students", href: "/students", icon: GraduationCap },
+  { labelKey: "nav.attendance", href: "/attendance", icon: CalendarCheck },
+  { labelKey: "nav.more", href: "/more", icon: MoreHorizontal },
 ];
 
 interface BottomNavProps {
@@ -31,9 +32,10 @@ interface BottomNavProps {
 
 export function BottomNav({ items = defaultBottomNavItems }: BottomNavProps) {
   const pathname = usePathname();
+  const { t } = useI18n();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-paper-raised border-t border-slate-light safe-area-inset-bottom">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-paper-raised border-t border-slate-light safe-area-inset-bottom" aria-label="Mobile navigation">
       <div className="flex items-center justify-around h-16">
         {items.map((item) => {
           const isActive =
@@ -48,7 +50,7 @@ export function BottomNav({ items = defaultBottomNavItems }: BottomNavProps) {
               )}
             >
               <item.icon className="h-5 w-5" />
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
             </Link>
           );
         })}

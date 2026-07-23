@@ -7,6 +7,7 @@ import { AlertCircle, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useI18n } from "@/i18n/provider";
 
 interface HomeworkItem {
   id: string;
@@ -66,6 +67,7 @@ async function fetchHomework(childId: string | null): Promise<HomeworkItem[]> {
 }
 
 function ParentHomeworkContent() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const childId = searchParams.get("child");
 
@@ -79,7 +81,7 @@ function ParentHomeworkContent() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-10 w-10 text-danger mb-3" />
-        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
         <p className="text-xs text-slate mt-1">{error.message}</p>
       </div>
     );
@@ -87,7 +89,7 @@ function ParentHomeworkContent() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Homework" description="Your child's assignments" />
+      <PageHeader title={t("parent.homework")} description={t("parent.upcomingHomework")} />
 
       {loading ? (
         <div className="space-y-2">
@@ -96,7 +98,7 @@ function ParentHomeworkContent() {
           ))}
         </div>
       ) : homework.length === 0 ? (
-        <EmptyState icon={FileText} title="No homework yet" description="Assignments from teachers will appear here." />
+        <EmptyState icon={FileText} title={t("parent.noHomework")} description={t("common.noData")} />
       ) : (
         <div className="space-y-3">
           {homework.map((hw) => (

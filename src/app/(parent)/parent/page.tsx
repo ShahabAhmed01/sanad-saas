@@ -6,6 +6,7 @@ import { AlertCircle, CalendarCheck, ClipboardCheck, Banknote, FileText } from "
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useI18n } from "@/i18n/provider";
 
 interface ChildInfo {
   id: string;
@@ -50,6 +51,7 @@ async function fetchChild(childId: string | null): Promise<ChildInfo | null> {
 }
 
 function ParentDashboardContent() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const childId = searchParams.get("child");
 
@@ -73,7 +75,7 @@ function ParentDashboardContent() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-10 w-10 text-danger mb-3" />
-        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
         <p className="text-xs text-slate mt-1">{error.message}</p>
       </div>
     );
@@ -82,9 +84,9 @@ function ParentDashboardContent() {
   if (!child) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate">No student linked to your account.</p>
+        <p className="text-slate">{t("parent.noChildren")}</p>
         <p className="text-sm text-slate mt-1">
-          Contact your school to link your child&apos;s record.
+          {t("parent.contactSchool")}
         </p>
       </div>
     );
@@ -94,10 +96,10 @@ function ParentDashboardContent() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-ink">
-          Welcome, Parent
+          {t("parent.welcomeParent")}
         </h1>
         <p className="text-slate">
-          Viewing information for <strong>{child.full_name}</strong> ({child.admission_number})
+          {t("parent.viewingFor")} <strong>{child.full_name}</strong> ({child.admission_number})
         </p>
       </div>
 
@@ -109,8 +111,8 @@ function ParentDashboardContent() {
                 <CalendarCheck className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="font-medium text-ink text-sm">Attendance</p>
-                <p className="text-xs text-slate">View history</p>
+                <p className="font-medium text-ink text-sm">{t("parent.attendance")}</p>
+                <p className="text-xs text-slate">{t("parent.attendanceSummary")}</p>
               </div>
             </CardContent>
           </Card>
@@ -123,8 +125,8 @@ function ParentDashboardContent() {
                 <ClipboardCheck className="h-5 w-5 text-accent" />
               </div>
               <div>
-                <p className="font-medium text-ink text-sm">Marks</p>
-                <p className="text-xs text-slate">Exam results</p>
+                <p className="font-medium text-ink text-sm">{t("parent.marks")}</p>
+                <p className="text-xs text-slate">{t("parent.examResults")}</p>
               </div>
             </CardContent>
           </Card>
@@ -137,8 +139,8 @@ function ParentDashboardContent() {
                 <Banknote className="h-5 w-5 text-accent" />
               </div>
               <div>
-                <p className="font-medium text-ink text-sm">Fees</p>
-                <p className="text-xs text-slate">Pay & view history</p>
+                <p className="font-medium text-ink text-sm">{t("parent.fees")}</p>
+                <p className="text-xs text-slate">{t("parent.feeHistory")}</p>
               </div>
             </CardContent>
           </Card>
@@ -151,8 +153,8 @@ function ParentDashboardContent() {
                 <FileText className="h-5 w-5 text-ink" />
               </div>
               <div>
-                <p className="font-medium text-ink text-sm">Homework</p>
-                <p className="text-xs text-slate">View assignments</p>
+                <p className="font-medium text-ink text-sm">{t("parent.homework")}</p>
+                <p className="text-xs text-slate">{t("parent.upcomingHomework")}</p>
               </div>
             </CardContent>
           </Card>

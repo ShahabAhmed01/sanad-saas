@@ -6,8 +6,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/i18n/provider";
 
 export default function PlatformAdminPage() {
+  const { t } = useI18n();
   const { data: platformData, isLoading, error } = useQuery({
     queryKey: ["platform", "stats"],
     queryFn: async () => {
@@ -65,7 +67,7 @@ export default function PlatformAdminPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-ink text-paper-raised flex items-center justify-center">
-        <div className="text-white/60">Loading...</div>
+        <div className="text-white/60">{t("platform.loading")}</div>
       </div>
     );
   }
@@ -75,7 +77,7 @@ export default function PlatformAdminPage() {
       <div className="min-h-screen bg-ink text-paper-raised flex items-center justify-center">
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="h-10 w-10 text-danger mb-3" />
-          <p className="text-sm font-medium text-paper-raised">Failed to load platform data</p>
+          <p className="text-sm font-medium text-paper-raised">{t("platform.failedToLoad")}</p>
           <p className="text-xs text-white/60 mt-1">{error.message}</p>
         </div>
       </div>
@@ -89,13 +91,13 @@ export default function PlatformAdminPage() {
           <div className="w-20 h-20 rounded-2xl bg-danger/20 flex items-center justify-center mx-auto mb-6">
             <ShieldAlert className="h-10 w-10 text-danger" />
           </div>
-          <h1 className="font-display text-3xl font-bold mb-2">Access Denied</h1>
+          <h1 className="font-display text-3xl font-bold mb-2">{t("platform.accessDenied")}</h1>
           <p className="text-white/60 mb-6">
-            You don&apos;t have permission to access the Platform Admin panel.
+            {t("platform.accessDeniedDesc")}
           </p>
           <Link href="/dashboard">
             <Button className="bg-accent hover:bg-accent/90 text-white">
-              Go to Dashboard
+              {t("platform.goToDashboard")}
             </Button>
           </Link>
         </div>
@@ -106,7 +108,7 @@ export default function PlatformAdminPage() {
   return (
     <div className="min-h-screen bg-ink text-paper-raised">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="font-display text-3xl font-bold mb-8">Platform Admin</h1>
+        <h1 className="font-display text-3xl font-bold mb-8">{t("platform.title")}</h1>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -114,28 +116,28 @@ export default function PlatformAdminPage() {
             <CardContent className="p-4">
               <School className="h-5 w-5 text-accent mb-2" />
               <p className="text-2xl font-bold tabular-nums">{stats.total}</p>
-              <p className="text-xs text-white/60">Total Schools</p>
+              <p className="text-xs text-white/60">{t("platform.totalSchools")}</p>
             </CardContent>
           </Card>
           <Card className="bg-paper-raised/10 border-white/10">
             <CardContent className="p-4">
               <Clock className="h-5 w-5 text-accent mb-2" />
               <p className="text-2xl font-bold tabular-nums">{stats.trialing}</p>
-              <p className="text-xs text-white/60">Trialing</p>
+              <p className="text-xs text-white/60">{t("platform.trialing")}</p>
             </CardContent>
           </Card>
           <Card className="bg-paper-raised/10 border-white/10">
             <CardContent className="p-4">
               <Check className="h-5 w-5 text-success mb-2" />
               <p className="text-2xl font-bold tabular-nums">{stats.active}</p>
-              <p className="text-xs text-white/60">Active</p>
+              <p className="text-xs text-white/60">{t("platform.active")}</p>
             </CardContent>
           </Card>
           <Card className="bg-paper-raised/10 border-white/10">
             <CardContent className="p-4">
               <GraduationCap className="h-5 w-5 text-accent mb-2" />
               <p className="text-2xl font-bold tabular-nums">{stats.totalStudents}</p>
-              <p className="text-xs text-white/60">Total Students</p>
+              <p className="text-xs text-white/60">{t("platform.totalStudents")}</p>
             </CardContent>
           </Card>
         </div>
@@ -143,19 +145,19 @@ export default function PlatformAdminPage() {
         {/* Schools Table */}
         <Card className="bg-paper-raised/10 border-white/10">
           <CardHeader>
-            <CardTitle className="text-lg font-display text-paper-raised">All Schools</CardTitle>
+            <CardTitle className="text-lg font-display text-paper-raised">{t("platform.allSchools")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full" aria-label="Schools">
+              <table className="w-full" aria-label={t("platform.allSchools")}>
                 <thead>
                   <tr className="border-b border-white/10">
-                    <th className="text-left text-xs text-white/60 py-2 px-3">School</th>
-                    <th className="text-left text-xs text-white/60 py-2 px-3">Status</th>
-                    <th className="text-left text-xs text-white/60 py-2 px-3">Plan</th>
-                    <th className="text-right text-xs text-white/60 py-2 px-3">Staff</th>
-                    <th className="text-right text-xs text-white/60 py-2 px-3">Students</th>
-                    <th className="text-left text-xs text-white/60 py-2 px-3">Created</th>
+                    <th className="text-left text-xs text-white/60 py-2 px-3">{t("platform.school")}</th>
+                    <th className="text-left text-xs text-white/60 py-2 px-3">{t("platform.status")}</th>
+                    <th className="text-left text-xs text-white/60 py-2 px-3">{t("platform.plan")}</th>
+                    <th className="text-right text-xs text-white/60 py-2 px-3">{t("platform.staff")}</th>
+                    <th className="text-right text-xs text-white/60 py-2 px-3">{t("platform.students")}</th>
+                    <th className="text-left text-xs text-white/60 py-2 px-3">{t("platform.created")}</th>
                   </tr>
                 </thead>
                 <tbody>

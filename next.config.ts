@@ -29,12 +29,18 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.speed-insights.com",
+      // NOTE: 'unsafe-inline' is required for Next.js hydration styles.
+      // 'unsafe-eval' is removed — no runtime code evaluation allowed.
+      // For production, migrate to nonce-based CSP via Next.js middleware.
+      "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://vercel.speed-insights.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' https://*.supabase.co data: blob:",
       "font-src 'self' https://fonts.gstatic.com",
       "connect-src 'self' https://*.supabase.co https://vitals.vercel-insights.com/v1/vitals",
       "frame-ancestors 'none'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
     ].join("; "),
   },
 ];

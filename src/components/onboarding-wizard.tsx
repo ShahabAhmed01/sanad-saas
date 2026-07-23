@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/provider";
 
 interface WizardData {
   schoolName: string;
@@ -24,21 +25,22 @@ interface WizardData {
   totalStaff: string;
 }
 
-const steps = [
-  { id: 1, title: "School Info", icon: Building2 },
-  { id: 2, title: "Size", icon: Users },
-  { id: 3, title: "Theme", icon: Palette },
-  { id: 4, title: "Ready", icon: Sparkles },
+const stepKeys = [
+  { id: 1, titleKey: "onboarding.schoolInfo", icon: Building2 },
+  { id: 2, titleKey: "onboarding.size", icon: Users },
+  { id: 3, titleKey: "onboarding.theme", icon: Palette },
+  { id: 4, titleKey: "onboarding.ready", icon: Sparkles },
 ];
 
-const themes = [
-  { name: "Noor Classic", color: "#B8862F", description: "Clean & professional" },
-  { name: "Emerald Dusk", color: "#1A7A5A", description: "Rich & premium" },
-  { name: "Warm Sand", color: "#A6612E", description: "Earthy & inviting" },
-  { name: "Midnight Royal", color: "#4A5FA5", description: "Modern & sophisticated" },
+const themeKeys = [
+  { nameKey: "onboarding.themeNoorClassic", color: "#B8862F", descriptionKey: "onboarding.themeNoorClassicDesc" },
+  { nameKey: "onboarding.themeEmeraldDusk", color: "#1A7A5A", descriptionKey: "onboarding.themeEmeraldDuskDesc" },
+  { nameKey: "onboarding.themeWarmSand", color: "#A6612E", descriptionKey: "onboarding.themeWarmSandDesc" },
+  { nameKey: "onboarding.themeMidnightRoyal", color: "#4A5FA5", descriptionKey: "onboarding.themeMidnightRoyalDesc" },
 ];
 
 export function OnboardingWizard() {
+  const { t } = useI18n();
   const [step, setStep] = useState(1);
   const [data, setData] = useState<WizardData>({
     schoolName: "",
@@ -48,6 +50,13 @@ export function OnboardingWizard() {
     totalStudents: "",
     totalStaff: "",
   });
+
+  const steps = stepKeys.map((s) => ({ ...s, title: t(s.titleKey) }));
+  const themes = themeKeys.map((th) => ({
+    ...th,
+    name: t(th.nameKey),
+    description: t(th.descriptionKey),
+  }));
 
   const updateData = (partial: Partial<WizardData>) => {
     setData((prev) => ({ ...prev, ...partial }));
@@ -87,7 +96,7 @@ export function OnboardingWizard() {
             ))}
           </div>
           <p className="text-sm text-muted-foreground text-center mt-2">
-            Step {step} of {steps.length}: {steps[step - 1].title}
+            {t("onboarding.stepOf", { step: String(step), total: String(steps.length) })}: {steps[step - 1].title}
           </p>
         </div>
 
@@ -100,19 +109,19 @@ export function OnboardingWizard() {
                   <Building2 className="h-7 w-7 text-accent" />
                 </div>
                 <h2 className="font-display text-2xl font-bold text-foreground">
-                  Tell us about your school
+                  {t("onboarding.tellUsAboutSchool")}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  We&apos;ll set everything up in under 5 minutes.
+                  {t("onboarding.setupInMinutes")}
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="schoolName">School / Academy Name</Label>
+                  <Label htmlFor="schoolName">{t("onboarding.schoolAcademyName")}</Label>
                   <Input
                     id="schoolName"
-                    placeholder="e.g., Al-Noor Science Academy"
+                    placeholder={t("onboarding.schoolNamePlaceholder")}
                     value={data.schoolName}
                     onChange={(e) => updateData({ schoolName: e.target.value })}
                     className="mt-1.5"
@@ -120,27 +129,27 @@ export function OnboardingWizard() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="city">City</Label>
+                    <Label htmlFor="city">{t("onboarding.city")}</Label>
                     <Input
                       id="city"
-                      placeholder="e.g., Lahore"
+                      placeholder={t("onboarding.cityPlaceholder")}
                       value={data.city}
                       onChange={(e) => updateData({ city: e.target.value })}
                       className="mt-1.5"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="board">Board / Curriculum</Label>
+                    <Label htmlFor="board">{t("onboarding.boardCurriculum")}</Label>
                     <select
                       id="board"
                       value={data.boardType}
                       onChange={(e) => updateData({ boardType: e.target.value })}
                       className="mt-1.5 flex h-10 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
                     >
-                      <option value="matric_fsc">Matric / FSc</option>
-                      <option value="cambridge_o_a_level">Cambridge O/A Level</option>
-                      <option value="montessori">Montessori</option>
-                      <option value="mixed">Mixed / Other</option>
+                      <option value="matric_fsc">{t("onboarding.boardMatric")}</option>
+                      <option value="cambridge_o_a_level">{t("onboarding.boardCambridge")}</option>
+                      <option value="montessori">{t("onboarding.boardMontessori")}</option>
+                      <option value="mixed">{t("onboarding.boardMixed")}</option>
                     </select>
                   </div>
                 </div>
@@ -155,31 +164,31 @@ export function OnboardingWizard() {
                   <Users className="h-7 w-7 text-accent" />
                 </div>
                 <h2 className="font-display text-2xl font-bold text-foreground">
-                  How big is your school?
+                  {t("onboarding.howBigIsSchool")}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  This helps us recommend the right plan.
+                  {t("onboarding.recommendPlan")}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="students">Approximate Students</Label>
+                  <Label htmlFor="students">{t("onboarding.approxStudents")}</Label>
                   <Input
                     id="students"
                     type="number"
-                    placeholder="e.g., 500"
+                    placeholder={t("onboarding.studentsPlaceholder")}
                     value={data.totalStudents}
                     onChange={(e) => updateData({ totalStudents: e.target.value })}
                     className="mt-1.5"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="staff">Staff Members</Label>
+                  <Label htmlFor="staff">{t("onboarding.staffMembers")}</Label>
                   <Input
                     id="staff"
                     type="number"
-                    placeholder="e.g., 30"
+                    placeholder={t("onboarding.staffPlaceholder")}
                     value={data.totalStaff}
                     onChange={(e) => updateData({ totalStaff: e.target.value })}
                     className="mt-1.5"
@@ -196,10 +205,10 @@ export function OnboardingWizard() {
                   <Palette className="h-7 w-7 text-accent" />
                 </div>
                 <h2 className="font-display text-2xl font-bold text-foreground">
-                  Choose your theme
+                  {t("onboarding.chooseYourTheme")}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  You can change this later in Settings.
+                  {t("onboarding.changeLater")}
                 </p>
               </div>
 
@@ -234,24 +243,26 @@ export function OnboardingWizard() {
                 <Sparkles className="h-8 w-8 text-success" />
               </div>
               <h2 className="font-display text-2xl font-bold text-foreground">
-                You&apos;re all set!
+                {t("onboarding.allSet")}
               </h2>
               <p className="text-muted-foreground max-w-sm mx-auto">
-                {data.schoolName ? `${data.schoolName} is` : "Your school is"} ready to go.
-                Start by adding your staff and students.
+                {data.schoolName
+                  ? t("onboarding.schoolReadyNamed", { name: data.schoolName })
+                  : t("onboarding.schoolReady")}
+                {" "}{t("onboarding.startByAdding")}
               </p>
               <div className="bg-muted/50 rounded-xl p-4 text-left space-y-2">
-                <p className="text-sm font-medium text-foreground">Quick start checklist:</p>
+                <p className="text-sm font-medium text-foreground">{t("onboarding.quickStartChecklist")}</p>
                 {[
-                  "Add your staff members",
-                  "Set up classes and sections",
-                  "Import or add students",
-                  "Configure fee structure",
-                  "Mark first attendance",
-                ].map((item, i) => (
+                  "onboarding.checklistAddStaff",
+                  "onboarding.checklistSetupClasses",
+                  "onboarding.checklistImportStudents",
+                  "onboarding.checklistConfigureFees",
+                  "onboarding.checklistMarkAttendance",
+                ].map((itemKey, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
                     <CheckCircle className="h-4 w-4 text-success shrink-0" />
-                    {item}
+                    {t(itemKey)}
                   </div>
                 ))}
               </div>
@@ -266,7 +277,7 @@ export function OnboardingWizard() {
                 onClick={() => setStep(step - 1)}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                {t("onboarding.back")}
               </Button>
             ) : (
               <div />
@@ -277,7 +288,7 @@ export function OnboardingWizard() {
                 className="bg-accent hover:bg-accent/90 text-white"
                 disabled={step === 1 && !data.schoolName}
               >
-                Continue
+                {t("onboarding.continue")}
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
@@ -307,7 +318,7 @@ export function OnboardingWizard() {
                 }}
                 className="bg-accent hover:bg-accent/90 text-white"
               >
-                Go to Dashboard
+                {t("onboarding.goToDashboard")}
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             )}

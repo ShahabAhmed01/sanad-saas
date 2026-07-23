@@ -13,6 +13,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { toast } from "sonner";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface StaffPayroll {
   id: string;
@@ -43,19 +44,22 @@ interface StaffMember {
 
 async function fetchStaff(schoolId: string): Promise<StaffMember[]> {
   const supabase = createClient();
-  const { data } = await supabase.from("staff").select("id, full_name, role").eq("school_id", schoolId).eq("status", "active");
+  const { data, error } = await supabase.from("staff").select("id, full_name, role").eq("school_id", schoolId).eq("status", "active");
+  if (error) throw error;
   return (data || []) as StaffMember[];
 }
 
 async function fetchPayroll(schoolId: string): Promise<StaffPayroll[]> {
   const supabase = createClient();
-  const { data } = await supabase.from("payroll").select("*").eq("school_id", schoolId).order("created_at", { ascending: false }).limit(50);
+  const { data, error } = await supabase.from("payroll").select("*").eq("school_id", schoolId).order("created_at", { ascending: false }).limit(50);
+  if (error) throw error;
   return data || [];
 }
 
 export default function PayrollPage() {
   const schoolId = useSchoolId();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [period, setPeriod] = useState("");
   const [staffSalaries, setStaffSalaries] = useState<StaffSalary[]>([]);
 
@@ -113,11 +117,11 @@ export default function PayrollPage() {
       }
     },
     onSuccess: () => {
-      toast.success("Payroll processed", { description: `Salaries processed for ${staffSalaries.length} staff members` });
+      toast.success(t("payroll.payrollProcessed"), { description: `Salaries processed for ${staffSalaries.length} staff members` });
       queryClient.invalidateQueries({ queryKey: queryKeys.school.payroll(schoolId) });
     },
     onError: (error) => {
-      toast.error("Failed to process payroll", { description: error.message });
+      toast.error(t("common.error"), { description: error.message });
     },
   });
 
@@ -129,22 +133,22 @@ export default function PayrollPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Payroll" }]} />
+      <Breadcrumbs items={[{ label: t("payroll.title") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Payroll"
-        description="Process and manage staff salaries"
+        title={t("payroll.title")}
+        description={t("payroll.processPayroll")}
         action={
           <div className="flex gap-2">
             <Input
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
-              placeholder="e.g. July 2026"
+              placeholder={t("payroll.payPeriod")}
               className="w-40"
             />
-            <Button onClick={() => processPayrollMutation.mutate()} isLoading={processPayrollMutation.isPending} disabled={!period || staffSalaries.length === 0} className="bg-accent hover:bg-accent/90 text-white">
+            <Button onClick={() => { if (!window.confirm(t("payroll.process.confirmMessage"))) return; processPayrollMutation.mutate(); }} isLoading={processPayrollMutation.isPending} disabled={!period || staffSalaries.length === 0} className="bg-accent hover:bg-accent/90 text-white">
               <Wallet className="h-4 w-4 mr-2" />
-              Process Payroll
+              {t("payroll.processPayrollBtn")}
             </Button>
           </div>
         }
@@ -153,7 +157,7 @@ export default function PayrollPage() {
       {(staffError || payrollError) && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="h-10 w-10 text-danger mb-3" />
-          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
           <p className="text-xs text-slate mt-1">{(staffError || payrollError)?.message}</p>
         </div>
       )}
@@ -165,7 +169,7 @@ export default function PayrollPage() {
       ) : staffSalaries.length > 0 ? (
         <Card className="border-slate-light">
           <CardHeader>
-            <CardTitle className="text-lg font-display">Staff Salaries</CardTitle>
+            <CardTitle className="text-lg font-display">{t("payroll.payrollManagement")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -176,35 +180,35 @@ export default function PayrollPage() {
                     <p className="text-xs text-slate capitalize">{s.role}</p>
                   </div>
                   <div>
-                    <Label htmlFor={`basic-salary-${s.staff_id}`} className="text-xs text-slate">Basic Salary</Label>
+                    <Label htmlFor={`basic-salary-${s.staff_id}`} className="text-xs text-slate">{t("payroll.baseSalary")}</Label>
                     <Input
                       id={`basic-salary-${s.staff_id}`}
                       type="number"
                       value={s.basic_salary || ""}
                       onChange={(e) => updateSalary(s.staff_id, "basic_salary", Number(e.target.value) || 0)}
-                      placeholder="0"
+                      placeholder={t("payroll.process.amountPlaceholder")}
                       className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label htmlFor={`allowances-${s.staff_id}`} className="text-xs text-slate">Allowances</Label>
+                    <Label htmlFor={`allowances-${s.staff_id}`} className="text-xs text-slate">{t("payroll.bonuses")}</Label>
                     <Input
                       id={`allowances-${s.staff_id}`}
                       type="number"
                       value={s.allowances || ""}
                       onChange={(e) => updateSalary(s.staff_id, "allowances", Number(e.target.value) || 0)}
-                      placeholder="0"
+                      placeholder={t("payroll.process.amountPlaceholder")}
                       className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label htmlFor={`deductions-${s.staff_id}`} className="text-xs text-slate">Deductions</Label>
+                    <Label htmlFor={`deductions-${s.staff_id}`} className="text-xs text-slate">{t("payroll.deductions")}</Label>
                     <Input
                       id={`deductions-${s.staff_id}`}
                       type="number"
                       value={s.deductions || ""}
                       onChange={(e) => updateSalary(s.staff_id, "deductions", Number(e.target.value) || 0)}
-                      placeholder="0"
+                      placeholder={t("payroll.process.amountPlaceholder")}
                       className="mt-1"
                     />
                   </div>
@@ -217,7 +221,7 @@ export default function PayrollPage() {
         <Card className="border-slate-light">
           <CardContent className="py-8 text-center">
             <Wallet className="h-8 w-8 text-slate-light mx-auto mb-2" />
-            <p className="text-slate">No active staff found. Add staff members first.</p>
+            <p className="text-slate">{t("payroll.noPayroll")}</p>
           </CardContent>
         </Card>
       )}
@@ -225,7 +229,7 @@ export default function PayrollPage() {
       {payroll.length > 0 && (
         <Card className="border-slate-light">
           <CardHeader>
-            <CardTitle className="text-lg font-display">Payroll History</CardTitle>
+            <CardTitle className="text-lg font-display">{t("payroll.payrollManagement")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

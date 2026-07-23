@@ -16,6 +16,7 @@ import {
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { createClient } from "@/lib/supabase/server";
 import { MobileNav } from "@/components/mobile-nav";
+import { getTranslations } from "@/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,8 @@ export const metadata = {
 };
 
 export default async function LandingPage() {
+  const t = getTranslations();
+
   interface Plan {
     id: string;
     name: string;
@@ -56,79 +59,79 @@ export default async function LandingPage() {
   const features = [
     {
       icon: Calendar,
-      title: "Smart Attendance",
-      description: "Mark attendance in seconds with keyboard shortcuts, GPS verification, and real-time parent alerts.",
+      title: t("landing.smartAttendance"),
+      description: t("landing.smartAttendanceDesc"),
       color: "text-accent",
       bg: "bg-accent/10",
     },
     {
       icon: Banknote,
-      title: "Fee Management",
-      description: "Auto-generate invoices, track payments via JazzCash, Easypaisa, or bank transfer. Never miss a rupee.",
+      title: t("landing.feeManagement"),
+      description: t("landing.feeManagementDesc"),
       color: "text-success",
       bg: "bg-success/10",
     },
     {
       icon: BarChart3,
-      title: "Performance Analytics",
-      description: "Beautiful charts showing student progress, staff effectiveness, and school-wide trends at a glance.",
+      title: t("landing.performanceAnalytics"),
+      description: t("landing.performanceAnalyticsDesc"),
       color: "text-accent",
       bg: "bg-accent/10",
     },
     {
       icon: MessageSquare,
-      title: "Parent Communication",
-      description: "Announcements, homework alerts, and fee reminders delivered via email and WhatsApp.",
+      title: t("landing.parentCommunication"),
+      description: t("landing.parentCommunicationDesc"),
       color: "text-success",
       bg: "bg-success/10",
     },
     {
       icon: BookOpen,
-      title: "Library & Transport",
-      description: "Complete book management with issue/return tracking and transport route assignment.",
+      title: t("landing.libraryTransport"),
+      description: t("landing.libraryTransportDesc"),
       color: "text-accent",
       bg: "bg-accent/10",
     },
     {
       icon: Shield,
-      title: "Enterprise Security",
-      description: "Bank-grade encryption, role-based access, immutable audit logs. Your data stays isolated and safe.",
+      title: t("landing.enterpriseSecurity"),
+      description: t("landing.enterpriseSecurityDesc"),
       color: "text-success",
       bg: "bg-success/10",
     },
   ];
 
   const stats = [
-    { value: "50+", label: "Schools Onboarded" },
-    { value: "12,000+", label: "Students Managed" },
-    { value: "99.9%", label: "Uptime" },
-    { value: "4.9/5", label: "User Rating" },
+    { value: "37+", label: t("landing.databaseTables") },
+    { value: "11", label: t("landing.roleBasedDashboardsCount") },
+    { value: "146", label: t("landing.securityPolicies") },
+    { value: "100%", label: t("landing.dataIsolation") },
   ];
 
   const faqs = [
     {
-      q: "What happens when the trial ends?",
-      a: "Your school's data stays safe. You can view existing records, but new entries are paused until you choose a plan.",
+      q: t("landing.faqTrial"),
+      a: t("landing.faqTrialAnswer"),
     },
     {
-      q: "Can we export our data if we leave?",
-      a: "Yes. You can request a full data export at any time. We retain your data for 90 days after cancellation.",
+      q: t("landing.faqExport"),
+      a: t("landing.faqExportAnswer"),
     },
     {
-      q: "Is our students' data secure?",
-      a: "Yes. Each school's data is completely isolated with row-level security. We use industry-standard encryption and strict role-based access controls.",
+      q: t("landing.faqSecurity"),
+      a: t("landing.faqSecurityAnswer"),
     },
     {
-      q: "Do you support both Matric/FSc and O/A-Level?",
-      a: "Yes. Sanad works with all board types — Matric/FSc, Cambridge O/A-Level, Montessori, and mixed institutions.",
+      q: t("landing.faqBoards"),
+      a: t("landing.faqBoardsAnswer"),
     },
     {
-      q: "Do you support Urdu?",
-      a: "Yes. Full Urdu language support with RTL layout is built-in. Toggle between English and Urdu anytime.",
+      q: t("landing.faqUrdu"),
+      a: t("landing.faqUrduAnswer"),
     },
     {
-      q: "Can parents access the system?",
-      a: "Yes. Every school gets a parent portal where parents can view attendance, marks, fees, homework, and announcements for their children.",
+      q: t("landing.faqParents"),
+      a: t("landing.faqParentsAnswer"),
     },
   ];
 
@@ -146,19 +149,19 @@ export default async function LandingPage() {
             </span>
           </div>
           <nav className="hidden md:flex items-center gap-8 text-sm text-slate">
-            <a href="#features" className="hover:text-ink transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-ink transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-ink transition-colors">FAQ</a>
+            <a href="#features" className="hover:text-ink transition-colors">{t("landing.featuresLabel")}</a>
+            <a href="#pricing" className="hover:text-ink transition-colors">{t("landing.pricingLabel")}</a>
+            <a href="#faq" className="hover:text-ink transition-colors">{t("landing.faq")}</a>
           </nav>
           <div className="hidden md:flex items-center gap-3">
             <Link href="/login">
               <Button variant="ghost" className="text-ink">
-                Log in
+                {t("auth.login")}
               </Button>
             </Link>
             <Link href="/signup">
               <Button className="bg-accent hover:bg-accent/90 text-white">
-                Start free trial
+                {t("landing.startTrial")}
               </Button>
             </Link>
           </div>
@@ -179,27 +182,24 @@ export default async function LandingPage() {
         <div className="max-w-4xl mx-auto text-center relative">
           <div className="inline-flex items-center gap-2 bg-accent/10 text-accent-ink px-4 py-1.5 rounded-full text-sm font-medium mb-6">
             <Zap className="h-4 w-4" />
-            Free 21-day trial — no credit card required
+            {t("common.freeTrial")} — {t("common.noCreditCard")}
           </div>
           <h1 className="font-display text-4xl md:text-6xl font-bold text-ink leading-tight mb-6">
-            The digital backbone
-            <br />
-            <span className="text-accent">of Pakistani education</span>
+            {t("landing.hero")}
           </h1>
           <p className="text-lg md:text-xl text-slate max-w-2xl mx-auto mb-8">
-            One platform for attendance, fees, exams, and parent communication.
-            Built for Pakistani schools — from small coaching centers to large institutions.
+            {t("landing.heroSubtitle")}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Link href="/signup">
               <Button size="xl" className="bg-accent hover:bg-accent/90 text-white px-8">
-                Start your free trial
+                {t("landing.startFreeTrialHero")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link href="#features">
               <Button size="lg" variant="outline" className="px-8">
-                See how it works
+                {t("landing.seeHowItWorksBtn")}
               </Button>
             </Link>
           </div>
@@ -208,15 +208,15 @@ export default async function LandingPage() {
           <div className="flex items-center justify-center gap-6 text-sm text-slate">
             <div className="flex items-center gap-1.5">
               <Lock className="h-4 w-4 text-success" />
-              <span>Bank-grade security</span>
+              <span>{t("landing.bankGradeSecurity")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Globe className="h-4 w-4 text-success" />
-              <span>Made for Pakistan</span>
+              <span>{t("landing.madeForPakistan")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <CheckCircle className="h-4 w-4 text-success" />
-              <span>No setup fees</span>
+              <span>{t("landing.noSetupFees")}</span>
             </div>
           </div>
         </div>
@@ -239,11 +239,12 @@ export default async function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="font-display text-3xl md:text-4xl font-bold text-ink mb-4">
-              Everything your school needs
+              {t("landing.everythingYourSchoolNeeds")}
             </h2>
             <p className="text-slate max-w-xl mx-auto">
-              Powerful modules designed specifically for Pakistani schools and academies.
-              Role-based dashboards so everyone sees exactly what they need.
+              {t("landing.powerfulModules")}
+              <br />
+              {t("landing.roleBasedDashboards")}
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -272,28 +273,28 @@ export default async function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="font-display text-3xl md:text-4xl font-bold text-ink mb-4">
-              Up and running in minutes
+              {t("landing.upAndRunning")}
             </h2>
             <p className="text-slate max-w-xl mx-auto">
-              No complex setup. No training required. Start managing your school today.
+              {t("landing.noComplexSetup")}
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
                 step: "01",
-                title: "Create your school",
-                description: "Sign up, enter your school details, and invite your team. Takes less than 5 minutes.",
+                title: t("landing.createYourSchool"),
+                description: t("landing.createYourSchoolDesc"),
               },
               {
                 step: "02",
-                title: "Add students & staff",
-                description: "Import from CSV or add manually. Set up classes, subjects, and fee structures.",
+                title: t("landing.addStudentsStaff"),
+                description: t("landing.addStudentsStaffDesc"),
               },
               {
                 step: "03",
-                title: "Start managing",
-                description: "Mark attendance, collect fees, track exams. Your parents get instant notifications.",
+                title: t("landing.startManaging"),
+                description: t("landing.startManagingDesc"),
               },
             ].map((item) => (
               <div key={item.step} className="text-center">
@@ -313,11 +314,10 @@ export default async function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="font-display text-3xl md:text-4xl font-bold text-ink mb-4">
-              Simple, transparent pricing
+              {t("landing.simpleTransparentPricing")}
             </h2>
             <p className="text-slate max-w-xl mx-auto">
-              Start free for 21 days. Choose a plan that fits your school.
-              No hidden fees, no surprises.
+              {t("landing.pricingDesc")}
             </p>
           </div>
           <div className="grid md:grid-cols-4 gap-6">
@@ -332,7 +332,7 @@ export default async function LandingPage() {
               >
                 {i === 1 && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-white text-xs font-semibold px-3 py-1 rounded-full">
-                    Most Popular
+                    {t("landing.mostPopular")}
                   </div>
                 )}
                 <h3 className="font-display text-xl font-semibold text-ink mb-1">
@@ -340,28 +340,28 @@ export default async function LandingPage() {
                 </h3>
                 <div className="mb-4">
                   {Number(plan.price_pkr_monthly) === 0 ? (
-                    <span className="text-3xl font-bold text-ink">Free</span>
+                    <span className="text-3xl font-bold text-ink">{t("landing.free")}</span>
                   ) : (
                     <span className="text-3xl font-bold text-ink">
                       Rs {Number(plan.price_pkr_monthly).toLocaleString()}
                     </span>
                   )}
                   <span className="text-slate text-sm">
-                    {Number(plan.price_pkr_monthly) === 0 ? " / 21 days" : " / month"}
+                    {Number(plan.price_pkr_monthly) === 0 ? t("landing.perTrial") : t("landing.perMonth")}
                   </span>
                 </div>
                 <ul className="space-y-2.5 text-sm text-slate mb-6">
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-success shrink-0" />
-                    Up to {plan.max_students} students
+                    {t("landing.studentsUpTo", { count: String(plan.max_students) })}
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-success shrink-0" />
-                    {Number(plan.price_pkr_monthly) === 0 ? "Full access to all features" : "All core modules"}
+                    {Number(plan.price_pkr_monthly) === 0 ? t("landing.fullAccessFeatures") : t("landing.allCoreModules")}
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-success shrink-0" />
-                    {Number(plan.price_pkr_monthly) === 0 ? "No credit card required" : "Email & WhatsApp support"}
+                    {Number(plan.price_pkr_monthly) === 0 ? t("landing.noCreditCardRequired") : t("landing.emailSupport")}
                   </li>
                 </ul>
                 <Link href="/signup" className="block">
@@ -369,7 +369,7 @@ export default async function LandingPage() {
                     className={`w-full ${i === 1 ? "bg-accent hover:bg-accent/90 text-white" : ""}`}
                     variant={i === 1 ? "default" : "outline"}
                   >
-                    {Number(plan.price_pkr_monthly) === 0 ? "Start free trial" : "Get started"}
+                    {Number(plan.price_pkr_monthly) === 0 ? t("landing.startFreeTrial") : t("landing.getStarted")}
                   </Button>
                 </Link>
               </div>
@@ -382,23 +382,23 @@ export default async function LandingPage() {
       <section className="py-16 px-4 border-t border-slate-light">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="font-display text-2xl font-semibold text-ink mb-4">
-            Pay your way
+            {t("landing.payYourWay")}
           </h2>
           <p className="text-slate mb-8 max-w-lg mx-auto">
-            Bank transfer, JazzCash, or Easypaisa. Whatever works for your school.
+            {t("landing.payYourWayDesc")}
           </p>
           <div className="flex items-center justify-center gap-8 text-sm text-slate">
             <div className="flex items-center gap-2">
               <Banknote className="h-5 w-5 text-accent" />
-              Bank Transfer
+              {t("fees.collect.bankTransfer")}
             </div>
             <div className="flex items-center gap-2">
               <Banknote className="h-5 w-5 text-success" />
-              JazzCash
+              {t("fees.collect.jazzcash")}
             </div>
             <div className="flex items-center gap-2">
               <Banknote className="h-5 w-5 text-success" />
-              Easypaisa
+              {t("fees.collect.easypaisa")}
             </div>
           </div>
         </div>
@@ -408,7 +408,7 @@ export default async function LandingPage() {
       <section id="faq" className="py-20 px-4 bg-paper-raised">
         <div className="max-w-3xl mx-auto">
           <h2 className="font-display text-3xl font-bold text-ink text-center mb-12">
-            Frequently asked questions
+            {t("landing.faqTitle")}
           </h2>
           <Accordion type="single">
             {faqs.map((faq, i) => (
@@ -429,14 +429,14 @@ export default async function LandingPage() {
       <section className="py-20 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-ink mb-4">
-            Ready to transform your school?
+            {t("landing.readyToTransformHero")}
           </h2>
           <p className="text-lg text-slate mb-8 max-w-xl mx-auto">
-            Join 50+ schools across Pakistan already using Sanad to streamline their operations.
+            {t("landing.readyToTransformDesc")}
           </p>
           <Link href="/signup">
             <Button size="xl" className="bg-accent hover:bg-accent/90 text-white px-8">
-              Start your free trial
+              {t("landing.startFreeTrialCta")}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
@@ -455,37 +455,37 @@ export default async function LandingPage() {
                 <span className="font-display text-base font-semibold text-ink">Sanad</span>
               </div>
               <p className="text-sm text-slate">
-                The digital backbone of Pakistani education. Built with care in Pakistan.
+                {t("landing.theDigitalBackbone")}
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-ink text-sm mb-3">Product</h4>
+              <h4 className="font-semibold text-ink text-sm mb-3">{t("landing.footer.product")}</h4>
               <ul className="space-y-2 text-sm text-slate">
-                <li><a href="#features" className="hover:text-ink transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-ink transition-colors">Pricing</a></li>
+                <li><a href="#features" className="hover:text-ink transition-colors">{t("landing.featuresLabel")}</a></li>
+                <li><a href="#pricing" className="hover:text-ink transition-colors">{t("landing.pricingLabel")}</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-ink text-sm mb-3">Support</h4>
+              <h4 className="font-semibold text-ink text-sm mb-3">{t("landing.footer.support")}</h4>
               <ul className="space-y-2 text-sm text-slate">
-                <li><a href="mailto:support@sanad.pk" className="hover:text-ink transition-colors">Contact Us</a></li>
+                <li><a href="mailto:support@sanad.pk" className="hover:text-ink transition-colors">{t("landing.contactUs")}</a></li>
                 <li><a href="#faq" className="hover:text-ink transition-colors">FAQ</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-ink text-sm mb-3">Legal</h4>
+              <h4 className="font-semibold text-ink text-sm mb-3">{t("landing.footer.legal")}</h4>
               <ul className="space-y-2 text-sm text-slate">
-                <li><Link href="/privacy" className="hover:text-ink transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:text-ink transition-colors">Terms of Service</Link></li>
+                <li><Link href="/privacy" className="hover:text-ink transition-colors">{t("landing.privacyPolicy")}</Link></li>
+                <li><Link href="/terms" className="hover:text-ink transition-colors">{t("landing.termsOfService")}</Link></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-slate-light pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-xs text-slate">
-              &copy; {new Date().getFullYear()} Sanad. All rights reserved.
+              {t("landing.allRightsReserved")}
             </p>
             <p className="text-xs text-slate">
-              Made with care in Pakistan
+              {t("landing.madeWithCare")}
             </p>
           </div>
         </div>

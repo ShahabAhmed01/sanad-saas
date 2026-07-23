@@ -18,7 +18,6 @@ export async function sendEmail({
   from = "Sanad <noreply@sanad.pk>",
 }: SendEmailParams) {
   if (!resend) {
-    console.warn("Resend not configured — email skipped:", subject, "to", to);
     return { success: false, error: "Resend not configured" };
   }
 
@@ -31,13 +30,11 @@ export async function sendEmail({
     });
 
     if (error) {
-      console.error("Resend error:", error);
       return { success: false, error: error.message };
     }
 
     return { success: true, data };
   } catch (error: unknown) {
-    console.error("Email send failed:", error);
     return { success: false, error: error instanceof Error ? error.message : "Email send failed" };
   }
 }

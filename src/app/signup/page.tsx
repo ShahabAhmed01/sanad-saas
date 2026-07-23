@@ -10,9 +10,11 @@ import { Select } from "@/components/ui/select";
 import { signupSchool, type SignupInput } from "@/lib/actions/auth";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import { useI18n } from "@/i18n/provider";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -36,13 +38,13 @@ export default function SignupPage() {
 
     if (result.error) {
       setError(result.error);
-      toast.error("Signup failed", { description: result.error });
+      toast.error(t("auth.signupFailed"), { description: result.error });
       setLoading(false);
       return;
     }
 
-    toast.success("Account created!", {
-      description: "Welcome to Sanad. Redirecting to your dashboard...",
+    toast.success(t("auth.accountCreatedToast"), {
+      description: t("auth.signupSuccessDesc"),
     });
 
     if ("needsLogin" in result && result.needsLogin) {
@@ -71,10 +73,10 @@ export default function SignupPage() {
         {/* Card */}
         <div className="bg-paper-raised rounded-xl border border-slate-light p-8 shadow-sm">
           <h1 className="font-display text-xl font-semibold text-ink mb-1">
-            Start your free trial
+            {t("auth.startFreeTrial")}
           </h1>
           <p className="text-sm text-slate mb-6">
-            21 days free. No credit card required.
+            {t("auth.signupDesc")}
           </p>
 
           {error && (
@@ -86,12 +88,12 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="school-name" className="text-ink">
-                School name
+                {t("auth.schoolName")}
               </Label>
               <Input
                 id="school-name"
                 name="school-name"
-                placeholder="Al-Noor Academy"
+                placeholder={t("auth.schoolNamePlaceholder")}
                 className="mt-1.5"
                 required
                 autoComplete="organization"
@@ -99,12 +101,12 @@ export default function SignupPage() {
             </div>
             <div>
               <Label htmlFor="admin-name" className="text-ink">
-                Your full name
+                {t("auth.adminName")}
               </Label>
               <Input
                 id="admin-name"
                 name="admin-name"
-                placeholder="Muhammad Ahmed"
+                placeholder={t("auth.adminNamePlaceholder")}
                 className="mt-1.5"
                 required
                 autoComplete="name"
@@ -112,13 +114,13 @@ export default function SignupPage() {
             </div>
             <div>
               <Label htmlFor="email" className="text-ink">
-                Work email
+                {t("auth.email")}
               </Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="admin@school.edu.pk"
+                placeholder={t("auth.emailPlaceholder")}
                 className="mt-1.5"
                 required
                 autoComplete="email"
@@ -126,14 +128,14 @@ export default function SignupPage() {
             </div>
             <div>
               <Label htmlFor="password" className="text-ink">
-                Password
+                {t("auth.password")}
               </Label>
               <div className="relative mt-1.5">
                 <Input
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Min. 8 characters"
+                  placeholder={t("auth.passwordMinPlaceholder")}
                   required
                   minLength={8}
                   autoComplete="new-password"
@@ -156,30 +158,30 @@ export default function SignupPage() {
             </div>
             <div>
               <Label htmlFor="board-type" className="text-ink">
-                Board / Curriculum
+                {t("auth.boardType")}
               </Label>
               <Select
                 id="board-type"
                 name="board-type"
                 className="mt-1.5"
-                placeholder="Select your board"
+                placeholder={t("auth.selectBoard")}
                 required
                 options={[
-                  { value: "matric_fsc", label: "Matric / FSc" },
-                  { value: "cambridge_o_a_level", label: "Cambridge O / A Level" },
-                  { value: "montessori", label: "Montessori" },
-                  { value: "mixed", label: "Mixed / Other" },
+                  { value: "matric_fsc", label: t("signup.boards.matric") },
+                  { value: "cambridge_o_a_level", label: t("signup.boards.cambridge") },
+                  { value: "montessori", label: t("signup.boards.montessori") },
+                  { value: "mixed", label: t("signup.boards.mixed") },
                 ]}
               />
             </div>
             <div>
               <Label htmlFor="city" className="text-ink">
-                City
+                {t("auth.city")}
               </Label>
               <Input
                 id="city"
                 name="city"
-                placeholder="Lahore"
+                placeholder={t("auth.cityPlaceholder")}
                 className="mt-1.5"
                 required
                 autoComplete="address-level2"
@@ -193,19 +195,19 @@ export default function SignupPage() {
                 required
               />
               <label htmlFor="terms" className="text-xs text-slate leading-relaxed">
-                I agree to the{" "}
+                {t("auth.agreeToTerms")}{" "}
                 <Link
                   href="/terms"
                   className="text-accent hover:text-accent-ink"
                 >
-                  Terms of Service
+                  {t("auth.termsOfService")}
                 </Link>{" "}
-                and{" "}
+                {t("auth.and")}{" "}
                 <Link
                   href="/privacy"
                   className="text-accent hover:text-accent-ink"
                 >
-                  Privacy Policy
+                  {t("auth.privacyPolicy")}
                 </Link>
               </label>
             </div>
@@ -215,9 +217,9 @@ export default function SignupPage() {
               isLoading={loading}
             >
               {loading ? (
-                "Creating account..."
+                t("auth.creatingAccount")
               ) : (
-                "Create my school account"
+                t("auth.createSchoolAccount")
               )}
             </Button>
           </form>
@@ -225,12 +227,12 @@ export default function SignupPage() {
 
         {/* Footer */}
         <p className="text-center text-sm text-slate mt-6">
-          Already have an account?{" "}
+          {t("auth.alreadyHaveAnAccount")}{" "}
           <Link
             href="/login"
             className="text-accent hover:text-accent-ink font-medium"
           >
-            Sign in
+            {t("auth.signinLink")}
           </Link>
         </p>
       </div>

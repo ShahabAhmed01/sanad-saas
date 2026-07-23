@@ -19,15 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { PageTransition } from "@/components/page-transition";
 import { toast } from "sonner";
-
-const parentNav = [
-  { label: "Dashboard", href: "/parent", icon: LayoutDashboard, shortLabel: "Home" },
-  { label: "Attendance", href: "/parent/attendance", icon: CalendarCheck, shortLabel: "Attend" },
-  { label: "Marks", href: "/parent/marks", icon: ClipboardCheck, shortLabel: "Marks" },
-  { label: "Fees", href: "/parent/fees", icon: Banknote, shortLabel: "Fees" },
-  { label: "Homework", href: "/parent/homework", icon: FileText, shortLabel: "HW" },
-  { label: "Announcements", href: "/parent/announcements", icon: Bell, shortLabel: "News" },
-];
+import { useI18n } from "@/i18n/provider";
 
 interface Child {
   id: string;
@@ -39,10 +31,20 @@ function ParentLayoutInner({
 }: {
   children: React.ReactNode;
 }) {
+  const { t } = useI18n();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [childSelectorOpen, setChildSelectorOpen] = useState(false);
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
+
+  const parentNav = [
+    { label: t("parent.dashboard"), href: "/parent", icon: LayoutDashboard, shortLabel: t("parent.home") },
+    { label: t("parent.attendance"), href: "/parent/attendance", icon: CalendarCheck, shortLabel: t("parent.attend") },
+    { label: t("parent.marks"), href: "/parent/marks", icon: ClipboardCheck, shortLabel: t("parent.marksShort") },
+    { label: t("parent.fees"), href: "/parent/fees", icon: Banknote, shortLabel: t("parent.feesShort") },
+    { label: t("parent.homework"), href: "/parent/homework", icon: FileText, shortLabel: t("parent.hw") },
+    { label: t("parent.announcements"), href: "/parent/announcements", icon: Bell, shortLabel: t("parent.news") },
+  ];
 
   const { data: children_ = [], isLoading, error } = useQuery<Child[]>({
     queryKey: ["parent", "children"],
@@ -86,7 +88,7 @@ function ParentLayoutInner({
   function handleLogout() {
     const supabase = createClient();
     supabase.auth.signOut();
-    toast.success("Logged out successfully");
+    toast.success(t("parent.logout"));
     window.location.href = "/login";
   }
 
@@ -100,7 +102,7 @@ function ParentLayoutInner({
               S
             </div>
             <span className="font-display text-base font-semibold text-foreground">
-              Parent Portal
+              {t("parent.portalTitle")}
             </span>
           </div>
 
@@ -118,7 +120,7 @@ function ParentLayoutInner({
                 </span>
               </div>
               <span className="hidden sm:inline">
-                {selectedChild ? selectedChild.full_name : "Select child"}
+                {selectedChild ? selectedChild.full_name : t("parent.selectChild")}
               </span>
               <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
@@ -126,7 +128,7 @@ function ParentLayoutInner({
             {childSelectorOpen && children_.length > 0 && (
               <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-xl shadow-xl z-50 p-1">
                 <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                  Select Child
+                  {t("parent.selectChild")}
                 </p>
                 {children_.map((child) => (
                   <button
@@ -159,7 +161,7 @@ function ParentLayoutInner({
             aria-label="Log out"
           >
             <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Logout</span>
+            <span className="hidden sm:inline">{t("parent.logout")}</span>
           </button>
         </div>
       </header>
@@ -195,7 +197,7 @@ function ParentLayoutInner({
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="h-8 w-8 animate-spin mb-3" />
-            <p className="text-sm">Loading your children...</p>
+            <p className="text-sm">{t("parent.loadingChildren")}</p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">

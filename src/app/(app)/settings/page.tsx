@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { AlertCircle, Save } from "lucide-react";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface SchoolSettings {
   name: string;
@@ -37,12 +38,12 @@ const themeOptions = [
 ];
 
 const modules = [
-  { key: "library", label: "Library", description: "Book catalog, issue/return tracking" },
-  { key: "transport", label: "Transport", description: "Route management and vehicle tracking" },
-  { key: "exams", label: "Exams", description: "Exam scheduling, marks entry, report cards" },
-  { key: "parent_portal", label: "Parent Portal", description: "Parent access to attendance, marks, fees" },
-  { key: "hr", label: "HR", description: "Staff leave, payroll, and HR management" },
-  { key: "front_desk", label: "Front Desk", description: "Admissions and certificates" },
+  { key: "library", labelKey: "settings.libraryModule", descKey: "settings.libraryModuleDesc" },
+  { key: "transport", labelKey: "settings.transportModule", descKey: "settings.transportModuleDesc" },
+  { key: "exams", labelKey: "settings.examsModule", descKey: "settings.examsModuleDesc" },
+  { key: "parent_portal", labelKey: "settings.parentPortalModule", descKey: "settings.parentPortalModuleDesc" },
+  { key: "hr", labelKey: "settings.hrModule", descKey: "settings.hrModuleDesc" },
+  { key: "front_desk", labelKey: "settings.frontDeskModule", descKey: "settings.frontDeskModuleDesc" },
 ];
 
 async function fetchSettings(schoolId: string) {
@@ -75,6 +76,7 @@ export default function SettingsPage() {
   const schoolId = useSchoolId();
   const queryClient = useQueryClient();
   const { setTheme, mode } = useThemeStore();
+  const { t } = useI18n();
 
   const { data, isLoading: loading, error } = useQuery({
     queryKey: queryKeys.school.settings(schoolId),
@@ -136,7 +138,7 @@ export default function SettingsPage() {
     },
     onError: (err: Error, _vars, context) => {
       queryClient.setQueryData(queryKeys.school.settings(schoolId), context?.previous);
-      toast.error("Failed to save settings", {
+      toast.error(t("settings.failedToSave"), {
         description: err.message || "An error occurred",
       });
     },
@@ -152,8 +154,8 @@ export default function SettingsPage() {
         }
       }
 
-      toast.success("Settings saved", {
-        description: "Your school settings have been updated.",
+      toast.success(t("settings.settingsSaved"), {
+        description: t("settings.settingsUpdatedDesc"),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.school.settings(schoolId) });
     },
@@ -162,10 +164,10 @@ export default function SettingsPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Settings" description="Manage your school's settings" />
+        <PageHeader title={t("settings.title")} description={t("settings.configureSchool")} />
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="h-10 w-10 text-danger mb-3" />
-          <p className="text-sm font-medium text-ink">Failed to load settings</p>
+          <p className="text-sm font-medium text-ink">{t("settings.failedToLoad")}</p>
           <p className="text-xs text-slate mt-1">{error.message}</p>
         </div>
       </div>
@@ -175,7 +177,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Settings" description="Manage your school's settings" />
+        <PageHeader title={t("settings.title")} description={t("settings.configureSchool")} />
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-48 bg-paper-raised rounded-xl animate-skeleton" />
@@ -187,11 +189,11 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs items={[{ label: "Settings" }]} />
+      <Breadcrumbs items={[{ label: t("settings.title") }]} />
 
       <PageHeader
-        title="Settings"
-        description="Manage your school's settings"
+        title={t("settings.title")}
+        description={t("settings.configureSchool")}
         action={
           <Button
             onClick={() => saveMutation.mutate()}
@@ -199,27 +201,27 @@ export default function SettingsPage() {
             className="bg-accent hover:bg-accent/90 text-white"
           >
             <Save className="h-4 w-4 mr-2" />
-            Save Changes
+            {t("settings.saveChanges")}
           </Button>
         }
       />
 
       <Tabs defaultValue="profile">
         <TabsList>
-          <TabsTrigger value="profile">School Profile</TabsTrigger>
-          <TabsTrigger value="modules">Modules</TabsTrigger>
-          <TabsTrigger value="theme">Theme</TabsTrigger>
+          <TabsTrigger value="profile">{t("settings.schoolProfile")}</TabsTrigger>
+          <TabsTrigger value="modules">{t("settings.modules")}</TabsTrigger>
+          <TabsTrigger value="theme">{t("settings.theme")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
           <Card className="border-slate-light">
             <CardHeader>
-              <CardTitle className="text-lg font-display">School Profile</CardTitle>
+              <CardTitle className="text-lg font-display">{t("settings.schoolProfile")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="school-name" className="text-ink">School Name</Label>
+                  <Label htmlFor="school-name" className="text-ink">{t("settings.schoolName")}</Label>
                   <Input
                     id="school-name"
                     value={currentSettings?.name || ""}
@@ -228,7 +230,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="school-email" className="text-ink">Email</Label>
+                  <Label htmlFor="school-email" className="text-ink">{t("common.email")}</Label>
                   <Input
                     id="school-email"
                     type="email"
@@ -238,7 +240,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="school-phone" className="text-ink">Phone</Label>
+                  <Label htmlFor="school-phone" className="text-ink">{t("common.phone")}</Label>
                   <Input
                     id="school-phone"
                     value={currentSettings?.phone || ""}
@@ -247,7 +249,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="school-city" className="text-ink">City</Label>
+                  <Label htmlFor="school-city" className="text-ink">{t("common.city")}</Label>
                   <Input
                     id="school-city"
                     value={currentSettings?.city || ""}
@@ -257,7 +259,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="school-address" className="text-ink">Address</Label>
+                <Label htmlFor="school-address" className="text-ink">{t("common.address")}</Label>
                 <Input
                   id="school-address"
                   value={currentSettings?.address || ""}
@@ -266,17 +268,17 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="board-type" className="text-ink">Board / Curriculum</Label>
+                <Label htmlFor="board-type" className="text-ink">{t("settings.boardType")}</Label>
                 <Select
                   id="board-type"
                   value={currentSettings?.board_type || ""}
                   onChange={(e) => setSettings(s => s ? { ...s, board_type: e.target.value } : s)}
                   className="mt-1.5"
                   options={[
-                    { value: "matric_fsc", label: "Matric / FSc" },
-                    { value: "cambridge_o_a_level", label: "Cambridge O / A Level" },
-                    { value: "montessori", label: "Montessori" },
-                    { value: "mixed", label: "Mixed / Other" },
+                    { value: "matric_fsc", label: t("signup.boards.matric") },
+                    { value: "cambridge_o_a_level", label: t("signup.boards.cambridge") },
+                    { value: "montessori", label: t("signup.boards.montessori") },
+                    { value: "mixed", label: t("signup.boards.mixed") },
                   ]}
                 />
               </div>
@@ -287,11 +289,11 @@ export default function SettingsPage() {
         <TabsContent value="modules">
           <Card className="border-slate-light">
             <CardHeader>
-              <CardTitle className="text-lg font-display">Modules</CardTitle>
+              <CardTitle className="text-lg font-display">{t("settings.modules")}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-slate mb-4">
-                Turn modules on or off. Disabled modules won&apos;t appear in any role&apos;s navigation.
+                {t("settings.enableDisableModules")}
               </p>
               <div className="space-y-3">
                 {modules.map((module) => (
@@ -300,8 +302,8 @@ export default function SettingsPage() {
                     className="flex items-center justify-between p-3 rounded-lg border border-slate-light"
                   >
                     <div>
-                      <span className="text-sm font-medium text-ink">{module.label}</span>
-                      <p className="text-xs text-slate mt-0.5">{module.description}</p>
+                      <span className="text-sm font-medium text-ink">{t(module.labelKey)}</span>
+                      <p className="text-xs text-slate mt-0.5">{t(module.descKey)}</p>
                     </div>
                     <Switch
                       id={`module-${module.key}`}
@@ -320,32 +322,32 @@ export default function SettingsPage() {
         <TabsContent value="theme">
           <Card className="border-slate-light">
             <CardHeader>
-              <CardTitle className="text-lg font-display">Theme</CardTitle>
+              <CardTitle className="text-lg font-display">{t("settings.theme")}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-slate mb-4">
-                Choose a color theme for your school&apos;s portal.
+                {t("settings.selectTheme")}
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {themeOptions.map((t) => (
+                {themeOptions.map((theme) => (
                   <button
-                    key={t.name}
+                    key={theme.name}
                     onClick={() => {
-                      setSettings(s => s ? { ...s, primary_color: t.color } : s);
-                      setTheme(t.themeName);
-                      applyTheme(t.themeName, mode);
+                      setSettings(s => s ? { ...s, primary_color: theme.color } : s);
+                      setTheme(theme.themeName);
+                      applyTheme(theme.themeName, mode);
                     }}
                     className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all ${
-                      currentSettings?.primary_color === t.color
+                      currentSettings?.primary_color === theme.color
                         ? "border-accent bg-accent/5 shadow-md"
                         : "border-slate-light hover:border-slate"
                     }`}
                   >
                     <div
                       className="w-10 h-10 rounded-full mb-2 shadow-sm"
-                      style={{ backgroundColor: t.color }}
+                      style={{ backgroundColor: theme.color }}
                     />
-                    <span className="text-xs font-medium text-ink">{t.name}</span>
+                    <span className="text-xs font-medium text-ink">{theme.name}</span>
                   </button>
                 ))}
               </div>

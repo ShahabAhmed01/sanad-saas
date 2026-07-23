@@ -8,6 +8,7 @@ import { AlertCircle, Shield } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useQuery } from "@tanstack/react-query";
 import { useSchoolId } from "@/hooks/use-user-profile";
+import { useI18n } from "@/i18n/provider";
 
 interface AuditLog {
   id: string;
@@ -21,6 +22,7 @@ interface AuditLog {
 
 export default function AuditLogPage() {
   const schoolId = useSchoolId();
+  const { t } = useI18n();
 
   const { data: logs = [], isLoading: loading, error } = useQuery<AuditLog[], Error>({
     queryKey: ["audit-logs", schoolId],
@@ -43,19 +45,19 @@ export default function AuditLogPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-10 w-10 text-danger mb-3" />
-        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
         <p className="text-xs text-slate mt-1">{error.message}</p>
       </div>
     );
   }
 
   const columns = [
-    { key: "actor_name", header: "Actor" },
-    { key: "action", header: "Action" },
-    { key: "entity_type", header: "Entity" },
+    { key: "actor_name", header: t("audit.actor") },
+    { key: "action", header: t("audit.action") },
+    { key: "entity_type", header: t("audit.entity") },
     {
       key: "created_at",
-      header: "Time",
+      header: t("audit.time"),
       render: (item: AuditLog) =>
         new Date(item.created_at).toLocaleString("en-PK"),
     },
@@ -63,9 +65,9 @@ export default function AuditLogPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Audit Log" }]} />
+      <Breadcrumbs items={[{ label: t("audit.title") }]} />
       <div className="space-y-6">
-      <PageHeader title="Audit Log" description="Track all significant actions across the school" />
+      <PageHeader title={t("audit.title")} description={t("audit.description")} />
 
       {loading ? (
         <div className="space-y-2">
@@ -74,15 +76,15 @@ export default function AuditLogPage() {
       ) : logs.length === 0 ? (
         <EmptyState
           icon={Shield}
-          title="No audit logs yet"
-          description="Actions performed by staff will be logged here for accountability."
+          title={t("audit.noLogs")}
+          description={t("audit.noLogsDesc")}
         />
       ) : (
         <DataTable
           data={logs}
           columns={columns}
           searchKeys={["actor_name", "action", "entity_type"]}
-          searchPlaceholder="Search by actor or action..."
+          searchPlaceholder={t("audit.searchByActorOrAction")}
         />
       )}
     </div>

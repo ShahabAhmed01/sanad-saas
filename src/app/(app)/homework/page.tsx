@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useQuery } from "@tanstack/react-query";
 import { useSchoolId } from "@/hooks/use-user-profile";
+import { useI18n } from "@/i18n/provider";
 
 interface HomeworkItem {
   id: string;
@@ -23,6 +24,7 @@ interface HomeworkItem {
 export default function HomeworkPage() {
   const router = useRouter();
   const schoolId = useSchoolId();
+  const { t } = useI18n();
 
   const { data: homework = [], isLoading: loading, error } = useQuery<HomeworkItem[], Error>({
     queryKey: ["homework", schoolId],
@@ -44,7 +46,7 @@ export default function HomeworkPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-10 w-10 text-danger mb-3" />
-        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-sm font-medium text-ink">{t("common.failed_to_load")}</p>
         <p className="text-xs text-slate mt-1">{error.message}</p>
       </div>
     );
@@ -52,15 +54,15 @@ export default function HomeworkPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Homework" }]} />
+      <Breadcrumbs items={[{ label: t("nav.homework") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Homework"
-        description="Manage homework assignments for your classes"
+        title={t("homework.title")}
+        description={t("homework.description")}
         action={
           <Button className="bg-accent hover:bg-accent/90 text-white">
             <Plus className="h-4 w-4 mr-2" />
-            Assign Homework
+            {t("homework.assign_homework")}
           </Button>
         }
       />
@@ -74,9 +76,9 @@ export default function HomeworkPage() {
       ) : homework.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="No homework assigned"
-          description="Create homework assignments for your students."
-          action={{ label: "Assign Homework", onClick: () => router.push("/homework/create") }}
+          title={t("homework.no_homework")}
+          description={t("homework.no_homework_description")}
+          action={{ label: t("homework.assign_homework"), onClick: () => router.push("/homework/create") }}
         />
       ) : (
         <div className="space-y-3">
@@ -96,7 +98,7 @@ export default function HomeworkPage() {
                 </div>
                 {hw.due_date && (
                   <span className="text-xs text-slate whitespace-nowrap">
-                    Due: {new Date(hw.due_date).toLocaleDateString("en-PK")}
+                    {t("homework.due")}: {new Date(hw.due_date).toLocaleDateString("en-PK")}
                   </span>
                 )}
               </div>

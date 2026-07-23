@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface LeaveRequest {
   id: string;
@@ -25,6 +26,7 @@ interface LeaveRequest {
 export default function PendingLeavePage() {
   const queryClient = useQueryClient();
   const schoolId = useSchoolId();
+  const { t } = useI18n();
 
   const { data: requests = [], isLoading: loading, error } = useQuery<LeaveRequest[]>({
     queryKey: [...queryKeys.school.leave(schoolId), "pending"],
@@ -51,11 +53,11 @@ export default function PendingLeavePage() {
       if (error) throw error;
     },
     onSuccess: (_data, variables) => {
-      toast.success(`Leave ${variables.status}`, { description: `Request has been ${variables.status}` });
+      toast.success(variables.status === "approved" ? t("leave.toast_approved") : t("leave.toast_rejected"));
       queryClient.invalidateQueries({ queryKey: [...queryKeys.school.leave(schoolId), "pending"] });
     },
     onError: (_error, variables) => {
-      toast.error(`Failed to ${variables.status} leave`, { description: "Please try again" });
+      toast.error(variables.status === "approved" ? t("leave.toast_approve_failed") : t("leave.toast_reject_failed"));
     },
   });
 
@@ -63,7 +65,7 @@ export default function PendingLeavePage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-10 w-10 text-danger mb-3" />
-        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-sm font-medium text-ink">{t("common.failed_to_load")}</p>
         <p className="text-xs text-slate mt-1">{error.message}</p>
       </div>
     );
@@ -71,9 +73,9 @@ export default function PendingLeavePage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Leave", href: "/leave" }, { label: "Pending Approvals" }]} />
+      <Breadcrumbs items={[{ label: t("nav.leave"), href: "/leave" }, { label: t("leave.pending_title") }]} />
       <div className="space-y-6">
-      <PageHeader title="Pending Leave Requests" description="Review and approve/reject staff leave requests" />
+      <PageHeader title={t("leave.pending_title")} description={t("leave.pending_description")} />
 
       {loading ? (
         <div className="space-y-3">
@@ -83,7 +85,7 @@ export default function PendingLeavePage() {
         <Card className="border-slate-light">
           <CardContent className="py-8 text-center">
             <CheckCircle className="h-8 w-8 text-success mx-auto mb-2" />
-            <p className="text-slate">No pending leave requests</p>
+            <p className="text-slate">{t("leave.no_pending")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -94,18 +96,18 @@ export default function PendingLeavePage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-medium text-ink">{req.staff?.full_name}</p>
-                    <p className="text-sm text-slate capitalize">{req.leave_type} Leave</p>
+                    <p className="text-sm text-slate capitalize">{t("leave.typeLeave", { type: req.leave_type })}</p>
                     <p className="text-xs text-slate mt-1">
                       {new Date(req.starts_on).toLocaleDateString("en-PK")} — {new Date(req.ends_on).toLocaleDateString("en-PK")}
                     </p>
                     {req.reason && <p className="text-xs text-slate mt-1">{req.reason}</p>}
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={() => decisionMutation.mutate({ id: req.id, status: "approved" })} className="bg-success hover:bg-success/90 text-white">
-                      <CheckCircle className="h-4 w-4 mr-1" /> Approve
+                    <Button size="sm" onClick={() => { if (!window.confirm(t("leave.confirm.approveMessage"))) return; decisionMutation.mutate({ id: req.id, status: "approved" }); }} className="bg-success hover:bg-success/90 text-white">
+                      <CheckCircle className="h-4 w-4 mr-1" /> {t("leave.approve")}
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => decisionMutation.mutate({ id: req.id, status: "rejected" })} className="text-danger border-danger hover:bg-danger/10">
-                      <XCircle className="h-4 w-4 mr-1" /> Reject
+                    <Button size="sm" variant="outline" onClick={() => { if (!window.confirm(t("leave.confirm.rejectMessage"))) return; decisionMutation.mutate({ id: req.id, status: "rejected" }); }} className="text-danger border-danger hover:bg-danger/10">
+                      <XCircle className="h-4 w-4 mr-1" /> {t("leave.reject")}
                     </Button>
                   </div>
                 </div>

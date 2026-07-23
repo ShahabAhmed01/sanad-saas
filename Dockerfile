@@ -6,7 +6,7 @@ RUN apk add --no-cache libc6-compat icu-libs
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder

@@ -11,6 +11,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Select } from "@/components/ui/select";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface Exam {
   id: string;
@@ -119,6 +120,7 @@ async function fetchReportCards(selectedExam: string): Promise<ReportCard[]> {
 export default function ReportCardsPage() {
   const [selectedExam, setSelectedExam] = useState("");
   const schoolId = useSchoolId();
+  const { t } = useI18n();
 
   const { data: exams = [], error: examsError } = useQuery({
     queryKey: queryKeys.school.exams(schoolId),
@@ -171,14 +173,14 @@ export default function ReportCardsPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Exams", href: "/exams" }, { label: "Report Cards" }]} />
+      <Breadcrumbs items={[{ label: t("nav.exams"), href: "/exams" }, { label: t("exams.report_cards") }]} />
       <div className="space-y-6">
-      <PageHeader title="Report Cards" description="Generate and print student report cards" />
+      <PageHeader title={t("exams.report_cards")} description={t("exams.report_cards_description")} />
 
       {(examsError || reportCardsError) && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="h-10 w-10 text-danger mb-3" />
-          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-sm font-medium text-ink">{t("common.failed_to_load")}</p>
           <p className="text-xs text-slate mt-1">{(examsError || reportCardsError)?.message}</p>
         </div>
       )}
@@ -186,12 +188,13 @@ export default function ReportCardsPage() {
       <Card className="border-slate-light max-w-lg">
         <CardContent className="p-4 space-y-4">
           <div>
-            <label className="text-sm font-medium text-ink">Select Exam</label>
+            <label htmlFor="exam-select" className="text-sm font-medium text-ink">{t("exams.select_exam")}</label>
             <Select
+              id="exam-select"
               value={selectedExam}
               onChange={(e) => setSelectedExam(e.target.value)}
               className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink"
-              placeholder="Select exam..."
+              placeholder={t("exams.select_exam_placeholder")}
               options={exams.map((e) => ({ value: e.id, label: e.name }))}
             />
           </div>
@@ -202,7 +205,7 @@ export default function ReportCardsPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-display text-lg font-semibold text-ink">
-              {reportCards.length} report cards generated
+              {reportCards.length} {t("exams.report_cards_generated")}
             </h3>
             <Button
               variant="outline"
@@ -213,7 +216,7 @@ export default function ReportCardsPage() {
               }}
             >
               <Printer className="h-4 w-4 mr-2" />
-              Print All
+              {t("exams.print_all")}
             </Button>
           </div>
 
@@ -246,7 +249,7 @@ export default function ReportCardsPage() {
                   className="mt-3"
                   onClick={() => printReportCard(card)}
                 >
-                  <Printer className="h-3 w-3 mr-1" /> Print
+                  <Printer className="h-3 w-3 mr-1" /> {t("exams.print")}
                 </Button>
               </CardContent>
             </Card>

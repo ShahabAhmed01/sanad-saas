@@ -14,6 +14,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { toast } from "sonner";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface FeeHead {
   id: string;
@@ -61,6 +62,7 @@ export default function FeeStructurePage() {
   const [success, setSuccess] = useState("");
   const schoolId = useSchoolId();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
 
   const { data: feeHeads = [], error: feeHeadsError } = useQuery({
     queryKey: queryKeys.school.fees(schoolId).concat("heads"),
@@ -89,14 +91,14 @@ export default function FeeStructurePage() {
       return newHeadName;
     },
     onSuccess: (name) => {
-      toast.success("Fee head added", { description: `"${name}" created successfully` });
+      toast.success(t("fees.fee_head_added"), { description: `"${name}" ${t("common.created_successfully")}` });
       setSuccess("Fee head added");
       setNewHeadName("");
       setTimeout(() => setSuccess(""), 2000);
       queryClient.invalidateQueries({ queryKey: queryKeys.school.fees(schoolId).concat("heads") });
     },
     onError: (error) => {
-      toast.error("Failed to add fee head", { description: error.message });
+      toast.error(t("fees.failed_to_add_fee_head"), { description: error.message });
     },
   });
 
@@ -124,7 +126,7 @@ export default function FeeStructurePage() {
       return { amount, frequency };
     },
     onSuccess: ({ amount, frequency }) => {
-      toast.success("Fee structure saved", { description: `PKR ${parseFloat(amount).toLocaleString()} ${frequency} fee added` });
+      toast.success(t("fees.fee_structure_saved"), { description: `PKR ${parseFloat(amount).toLocaleString()} ${t(`fees.${frequency}`)} ${t("fees.fee_added")}` });
       setSuccess("Fee structure added");
       setSelectedClass("");
       setSelectedHead("");
@@ -133,20 +135,20 @@ export default function FeeStructurePage() {
       queryClient.invalidateQueries({ queryKey: queryKeys.school.fees(schoolId).concat("structures") });
     },
     onError: (error) => {
-      toast.error("Failed to add fee structure", { description: error.message });
+      toast.error(t("fees.failed_to_add_structure"), { description: error.message });
     },
   });
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Fees", href: "/fees" }, { label: "Fee Structure" }]} />
+      <Breadcrumbs items={[{ label: t("nav.fees"), href: "/fees" }, { label: t("fees.fee_structure") }]} />
       <div className="space-y-6">
-      <PageHeader title="Fee Structure" description="Configure fee heads and fee structures per class" />
+      <PageHeader title={t("fees.fee_structure")} description={t("fees.fee_structure_description")} />
 
       {(feeHeadsError || structuresError || classesError) && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="h-10 w-10 text-danger mb-3" />
-          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-sm font-medium text-ink">{t("common.failed_to_load")}</p>
           <p className="text-xs text-slate mt-1">{(feeHeadsError || structuresError || classesError)?.message}</p>
         </div>
       )}
@@ -164,11 +166,11 @@ export default function FeeStructurePage() {
         {/* Fee Heads */}
         <Card className="border-slate-light">
           <CardHeader>
-            <CardTitle className="text-lg font-display">Fee Heads</CardTitle>
+            <CardTitle className="text-lg font-display">{t("fees.fee_heads")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
-              <Input value={newHeadName} onChange={(e) => setNewHeadName(e.target.value)} placeholder="e.g. Tuition Fee" />
+              <Input value={newHeadName} onChange={(e) => setNewHeadName(e.target.value)} placeholder={t("fees.fee_head_placeholder")} />
               <Button onClick={() => addFeeHeadMutation.mutate()} isLoading={addFeeHeadMutation.isPending} disabled={!newHeadName} className="bg-accent hover:bg-accent/90 text-white">
                 <Plus className="h-4 w-4" />
               </Button>
@@ -186,35 +188,35 @@ export default function FeeStructurePage() {
         {/* Add Structure */}
         <Card className="border-slate-light">
           <CardHeader>
-            <CardTitle className="text-lg font-display">Add Fee Structure</CardTitle>
+            <CardTitle className="text-lg font-display">{t("fees.add_fee_structure")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="class" className="text-ink">Class</Label>
-              <Select id="class" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder="Select class..." options={classes.map((c) => ({ value: c.id, label: c.name }))} />
+              <Label htmlFor="class" className="text-ink">{t("common.class")}</Label>
+              <Select id="class" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder={t("fees.select_class")} options={classes.map((c) => ({ value: c.id, label: c.name }))} />
             </div>
             <div>
-              <Label htmlFor="fee-head" className="text-ink">Fee Head</Label>
-              <Select id="fee-head" value={selectedHead} onChange={(e) => setSelectedHead(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder="Select fee head..." options={feeHeads.map((h) => ({ value: h.id, label: h.name }))} />
+              <Label htmlFor="fee-head" className="text-ink">{t("fees.fee_head")}</Label>
+              <Select id="fee-head" value={selectedHead} onChange={(e) => setSelectedHead(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder={t("fees.select_fee_head")} options={feeHeads.map((h) => ({ value: h.id, label: h.name }))} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="amount" className="text-ink">Amount (PKR)</Label>
-                <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="5000" className="mt-1.5" />
+                <Label htmlFor="amount" className="text-ink">{t("fees.amount_pkr")}</Label>
+                <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={t("fees.structure.amountPlaceholder")} className="mt-1.5" />
               </div>
               <div>
-                <Label htmlFor="frequency" className="text-ink">Frequency</Label>
-                <Select id="frequency" value={frequency} onChange={(e) => setFrequency(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder="Monthly" options={[
-                  { value: "monthly", label: "Monthly" },
-                  { value: "quarterly", label: "Quarterly" },
-                  { value: "annual", label: "Annual" },
-                  { value: "one_time", label: "One Time" },
+                <Label htmlFor="frequency" className="text-ink">{t("fees.frequency")}</Label>
+                <Select id="frequency" value={frequency} onChange={(e) => setFrequency(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder={t("fees.monthly")} options={[
+                  { value: "monthly", label: t("fees.monthly") },
+                  { value: "quarterly", label: t("fees.quarterly") },
+                  { value: "annual", label: t("fees.annual") },
+                  { value: "one_time", label: t("fees.one_time") },
                 ]} />
               </div>
             </div>
             <Button onClick={() => addStructureMutation.mutate()} isLoading={addStructureMutation.isPending} disabled={!selectedClass || !selectedHead || !amount} className="w-full bg-accent hover:bg-accent/90 text-white">
               <Plus className="h-4 w-4 mr-2" />
-              Add Fee Structure
+              {t("fees.add_fee_structure")}
             </Button>
           </CardContent>
         </Card>
@@ -224,7 +226,7 @@ export default function FeeStructurePage() {
       {structures.length > 0 && (
         <Card className="border-slate-light">
           <CardHeader>
-            <CardTitle className="text-lg font-display">Current Fee Structures</CardTitle>
+            <CardTitle className="text-lg font-display">{t("fees.current_fee_structures")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

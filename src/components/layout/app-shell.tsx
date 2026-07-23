@@ -4,16 +4,19 @@ import { useState } from "react";
 import { Sidebar } from "./sidebar";
 import { BottomNav } from "./bottom-nav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LanguageToggle } from "@/components/ui/language-toggle";
 import { CommandPalette } from "@/components/command-palette";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { useSmartDefaults } from "@/hooks/use-smart-defaults";
 import { Search } from "lucide-react";
+import { useI18n } from "@/i18n/provider";
 
 interface AppShellProps {
   children: React.ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {
+  const { t } = useI18n();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   useSmartDefaults();
 
@@ -53,13 +56,14 @@ export function AppShell({ children }: AppShellProps) {
             className="hidden md:flex items-center gap-2 ml-4 px-3 py-1.5 text-sm text-muted-foreground bg-muted/50 rounded-lg border border-border hover:bg-muted transition-colors"
           >
             <Search className="h-3.5 w-3.5" />
-            <span>Search...</span>
+            <span>{t("common.search")}</span>
             <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-background rounded border border-border">
               ⌘K
             </kbd>
           </button>
 
           <div className="flex-1" />
+          <LanguageToggle />
           <ThemeToggle />
         </header>
 

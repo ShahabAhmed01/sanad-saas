@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/provider";
 import { getLastVisitedPath } from "@/hooks/use-smart-defaults";
 import {
   LayoutDashboard,
@@ -20,62 +21,61 @@ import {
 } from "lucide-react";
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   href: string;
   icon: React.ElementType;
 }
 
-// Role-specific nav configurations
-export const roleNavItems: Record<string, NavItem[]> = {
+const roleNavKeys: Record<string, NavItem[]> = {
   school_admin: [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Staff", href: "/staff", icon: Users },
-    { label: "Students", href: "/students", icon: GraduationCap },
-    { label: "Take Attendance", href: "/attendance/mark", icon: CalendarCheck },
-    { label: "Fees", href: "/fees", icon: Banknote },
-    { label: "Exams", href: "/exams", icon: ClipboardList },
-    { label: "Report Cards", href: "/exams/report-cards", icon: FileText },
-    { label: "Certificates", href: "/certificates", icon: ClipboardList },
-    { label: "Library", href: "/library", icon: BookOpen },
-    { label: "Transport", href: "/transport", icon: Bus },
-    { label: "Audit Log", href: "/audit", icon: ClipboardList },
-    { label: "Notifications", href: "/notifications", icon: Bell },
-    { label: "Settings", href: "/settings", icon: Settings },
+    { labelKey: "sidebar-nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { labelKey: "sidebar-nav.staff", href: "/staff", icon: Users },
+    { labelKey: "sidebar-nav.students", href: "/students", icon: GraduationCap },
+    { labelKey: "sidebar-nav.takeAttendance", href: "/attendance/mark", icon: CalendarCheck },
+    { labelKey: "sidebar-nav.fees", href: "/fees", icon: Banknote },
+    { labelKey: "sidebar-nav.exams", href: "/exams", icon: ClipboardList },
+    { labelKey: "sidebar-nav.reportCards", href: "/exams/report-cards", icon: FileText },
+    { labelKey: "sidebar-nav.certificates", href: "/certificates", icon: ClipboardList },
+    { labelKey: "sidebar-nav.library", href: "/library", icon: BookOpen },
+    { labelKey: "sidebar-nav.transport", href: "/transport", icon: Bus },
+    { labelKey: "sidebar-nav.auditLog", href: "/audit", icon: ClipboardList },
+    { labelKey: "sidebar-nav.notifications", href: "/notifications", icon: Bell },
+    { labelKey: "sidebar-nav.settings", href: "/settings", icon: Settings },
   ],
   teacher: [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "My Classes", href: "/my-classes", icon: GraduationCap },
-    { label: "Take Attendance", href: "/attendance/mark", icon: CalendarCheck },
-    { label: "Gradebook", href: "/gradebook/entry", icon: ClipboardCheck },
-    { label: "Homework", href: "/homework/create", icon: FileText },
-    { label: "Leave", href: "/leave", icon: CalendarCheck },
-    { label: "Notifications", href: "/notifications", icon: Bell },
+    { labelKey: "sidebar-nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { labelKey: "sidebar-nav.myClasses", href: "/my-classes", icon: GraduationCap },
+    { labelKey: "sidebar-nav.takeAttendance", href: "/attendance/mark", icon: CalendarCheck },
+    { labelKey: "sidebar-nav.gradebook", href: "/gradebook/entry", icon: ClipboardCheck },
+    { labelKey: "sidebar-nav.homework", href: "/homework/create", icon: FileText },
+    { labelKey: "sidebar-nav.leave", href: "/leave", icon: CalendarCheck },
+    { labelKey: "sidebar-nav.notifications", href: "/notifications", icon: Bell },
   ],
   accountant: [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Fee Structure", href: "/fees/structure", icon: Banknote },
-    { label: "Generate Invoices", href: "/fees/generate", icon: ClipboardList },
-    { label: "Collect Payment", href: "/fees/collect", icon: Banknote },
-    { label: "Expenses", href: "/expenses", icon: Banknote },
-    { label: "Payroll", href: "/payroll", icon: Users },
-    { label: "Notifications", href: "/notifications", icon: Bell },
+    { labelKey: "sidebar-nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { labelKey: "sidebar-nav.feeStructure", href: "/fees/structure", icon: Banknote },
+    { labelKey: "sidebar-nav.generateInvoices", href: "/fees/generate", icon: ClipboardList },
+    { labelKey: "sidebar-nav.collectPayment", href: "/fees/collect", icon: Banknote },
+    { labelKey: "sidebar-nav.expenses", href: "/expenses", icon: Banknote },
+    { labelKey: "sidebar-nav.payroll", href: "/payroll", icon: Users },
+    { labelKey: "sidebar-nav.notifications", href: "/notifications", icon: Bell },
   ],
   principal: [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Staff", href: "/staff", icon: Users },
-    { label: "Students", href: "/students", icon: GraduationCap },
-    { label: "Attendance", href: "/attendance", icon: CalendarCheck },
-    { label: "Leave Approvals", href: "/leave/pending", icon: CalendarCheck },
-    { label: "Exams", href: "/exams", icon: ClipboardList },
-    { label: "Notifications", href: "/notifications", icon: Bell },
+    { labelKey: "sidebar-nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { labelKey: "sidebar-nav.staff", href: "/staff", icon: Users },
+    { labelKey: "sidebar-nav.students", href: "/students", icon: GraduationCap },
+    { labelKey: "sidebar-nav.attendance", href: "/attendance", icon: CalendarCheck },
+    { labelKey: "sidebar-nav.leaveApprovals", href: "/leave/pending", icon: CalendarCheck },
+    { labelKey: "sidebar-nav.exams", href: "/exams", icon: ClipboardList },
+    { labelKey: "sidebar-nav.notifications", href: "/notifications", icon: Bell },
   ],
   parent: [
-    { label: "Dashboard", href: "/parent", icon: LayoutDashboard },
-    { label: "Attendance", href: "/parent/attendance", icon: CalendarCheck },
-    { label: "Marks", href: "/parent/marks", icon: ClipboardCheck },
-    { label: "Fees", href: "/parent/fees", icon: Banknote },
-    { label: "Homework", href: "/parent/homework", icon: FileText },
-    { label: "Announcements", href: "/parent/announcements", icon: Bell },
+    { labelKey: "sidebar-nav.dashboard", href: "/parent", icon: LayoutDashboard },
+    { labelKey: "sidebar-nav.attendance", href: "/parent/attendance", icon: CalendarCheck },
+    { labelKey: "sidebar-nav.marks", href: "/parent/marks", icon: ClipboardCheck },
+    { labelKey: "sidebar-nav.fees", href: "/parent/fees", icon: Banknote },
+    { labelKey: "sidebar-nav.homework", href: "/parent/homework", icon: FileText },
+    { labelKey: "sidebar-nav.announcements", href: "/parent/announcements", icon: Bell },
   ],
 };
 
@@ -85,9 +85,11 @@ interface SidebarNavProps {
 }
 
 export function SidebarNav({ role = "school_admin", collapsed = false }: SidebarNavProps) {
+  const { t } = useI18n();
   const pathname = usePathname();
   const router = useRouter();
-  const items = roleNavItems[role] || roleNavItems.school_admin;
+  const navKeys = roleNavKeys[role] || roleNavKeys.school_admin;
+  const items = navKeys.map((item) => ({ ...item, label: t(item.labelKey) }));
 
   return (
     <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">

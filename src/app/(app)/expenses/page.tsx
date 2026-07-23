@@ -15,6 +15,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { toast } from "sonner";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface Expense {
   id: string;
@@ -26,13 +27,15 @@ interface Expense {
 
 async function fetchExpenses(schoolId: string): Promise<Expense[]> {
   const supabase = createClient();
-  const { data } = await supabase.from("expenses").select("*").eq("school_id", schoolId).order("spent_on", { ascending: false });
+  const { data, error } = await supabase.from("expenses").select("*").eq("school_id", schoolId).order("spent_on", { ascending: false });
+  if (error) throw error;
   return data || [];
 }
 
 export default function ExpensesPage() {
   const schoolId = useSchoolId();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const [showForm, setShowForm] = useState(false);
   const [category, setCategory] = useState("utilities");
   const [description, setDescription] = useState("");
@@ -85,10 +88,10 @@ export default function ExpensesPage() {
     },
     onError: (_err, _newItem, context) => {
       queryClient.setQueryData(queryKeys.school.expenses(schoolId), context?.previous);
-      toast.error("Failed to record expense");
+      toast.error(t("common.error"));
     },
     onSuccess: () => {
-      toast.success("Expense recorded", { description: `PKR ${parseFloat(amount).toLocaleString()} ${category} expense added` });
+      toast.success(t("expenses.expenseAdded"), { description: `PKR ${parseFloat(amount).toLocaleString()} ${category} expense added` });
       queryClient.invalidateQueries({ queryKey: queryKeys.school.expenses(schoolId) });
       setShowForm(false);
       setAmount("");
@@ -99,32 +102,32 @@ export default function ExpensesPage() {
   const total = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
 
   const columns = [
-    { key: "category", header: "Category", render: (item: Expense) => <span className="capitalize">{item.category}</span> },
-    { key: "description", header: "Description" },
+    { key: "category", header: t("expenses.columns.category"), render: (item: Expense) => <span className="capitalize">{item.category}</span> },
+    { key: "description", header: t("expenses.columns.description") },
     {
       key: "amount",
-      header: "Amount",
+      header: t("expenses.columns.amount"),
       className: "text-right",
       render: (item: Expense) => <span className="tabular-nums font-medium">PKR {Number(item.amount).toLocaleString()}</span>,
     },
     {
       key: "spent_on",
-      header: "Date",
+      header: t("expenses.columns.date"),
       render: (item: Expense) => new Date(item.spent_on).toLocaleDateString("en-PK"),
     },
   ];
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Expenses" }]} />
+      <Breadcrumbs items={[{ label: t("expenses.title") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Expenses"
-        description="Track and manage school expenses"
+        title={t("expenses.title")}
+        description={t("expenses.trackExpenses")}
         action={
           <Button onClick={() => setShowForm(!showForm)} className="bg-accent hover:bg-accent/90 text-white">
             <Plus className="h-4 w-4 mr-2" />
-            Add Expense
+            {t("expenses.addExpense")}
           </Button>
         }
       />
@@ -132,7 +135,7 @@ export default function ExpensesPage() {
       {expensesError && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="h-10 w-10 text-danger mb-3" />
-          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
           <p className="text-xs text-slate mt-1">{expensesError.message}</p>
         </div>
       )}
@@ -140,7 +143,7 @@ export default function ExpensesPage() {
       {/* Total */}
       <Card className="border-slate-light">
         <CardContent className="p-4 flex items-center justify-between">
-          <span className="text-sm text-slate">Total Expenses</span>
+          <span className="text-sm text-slate">{t("expenses.totalExpenses")}</span>
           <span className="text-xl font-bold text-ink tabular-nums">PKR {total.toLocaleString()}</span>
         </CardContent>
       </Card>
@@ -149,35 +152,35 @@ export default function ExpensesPage() {
       {showForm && (
         <Card className="border-slate-light max-w-lg">
           <CardHeader>
-            <CardTitle className="text-lg font-display">New Expense</CardTitle>
+            <CardTitle className="text-lg font-display">{t("expenses.addExpense")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="category" className="text-ink">Category</Label>
-              <Select id="category" value={category} onChange={(e) => setCategory(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder="Utilities" options={[
-                { value: "utilities", label: "Utilities" },
-                { value: "maintenance", label: "Maintenance" },
-                { value: "salaries", label: "Salaries" },
-                { value: "supplies", label: "Supplies" },
-                { value: "other", label: "Other" },
+              <Label htmlFor="category" className="text-ink">{t("expenses.expenseCategory")}</Label>
+              <Select id="category" value={category} onChange={(e) => setCategory(e.target.value)} className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink" placeholder={t("expenses.form.categoryPlaceholder")} options={[
+                { value: "utilities", label: t("expenses.utilities") },
+                { value: "maintenance", label: t("expenses.maintenance") },
+                { value: "salaries", label: t("expenses.salary") },
+                { value: "supplies", label: t("expenses.supplies") },
+                { value: "other", label: t("expenses.other") },
               ]} />
             </div>
             <div>
-              <Label htmlFor="description" className="text-ink">Description</Label>
-              <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Electricity bill" className="mt-1.5" />
+              <Label htmlFor="description" className="text-ink">{t("expenses.expenseDescription")}</Label>
+              <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("expenses.form.descriptionPlaceholder")} className="mt-1.5" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="amount" className="text-ink">Amount (PKR)</Label>
+                <Label htmlFor="amount" className="text-ink">{t("expenses.expenseAmount")}</Label>
                 <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1.5" />
               </div>
               <div>
-                <Label htmlFor="date" className="text-ink">Date</Label>
+                <Label htmlFor="date" className="text-ink">{t("expenses.expenseDate")}</Label>
                 <Input id="date" type="date" value={spentOn} onChange={(e) => setSpentOn(e.target.value)} className="mt-1.5" />
               </div>
             </div>
             <Button onClick={() => addExpenseMutation.mutate()} disabled={!amount} isLoading={addExpenseMutation.isPending} className="w-full bg-accent hover:bg-accent/90 text-white">
-              Add Expense
+              {t("expenses.addExpense")}
             </Button>
           </CardContent>
         </Card>
@@ -189,7 +192,7 @@ export default function ExpensesPage() {
           {[1, 2, 3].map((i) => <div key={i} className="h-12 bg-paper-raised rounded-lg animate-skeleton" />)}
         </div>
       ) : (
-        <DataTable data={expenses} columns={columns} searchKeys={["category", "description"]} searchPlaceholder="Search expenses..." />
+        <DataTable data={expenses} columns={columns} searchKeys={["category", "description"]} searchPlaceholder={t("common.search")} />
       )}
     </div>
     </>

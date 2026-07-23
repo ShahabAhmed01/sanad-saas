@@ -19,24 +19,25 @@ import {
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/i18n/provider";
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   href: string;
   icon: React.ElementType;
 }
 
 const defaultNavItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Staff", href: "/staff", icon: Users },
-  { label: "Students", href: "/students", icon: GraduationCap },
-  { label: "Attendance", href: "/attendance", icon: CalendarCheck },
-  { label: "Fees", href: "/fees", icon: Banknote },
-  { label: "Exams", href: "/exams", icon: ClipboardList },
-  { label: "Library", href: "/library", icon: BookOpen },
-  { label: "Transport", href: "/transport", icon: Bus },
-  { label: "Notifications", href: "/notifications", icon: Bell },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { labelKey: "nav.staff", href: "/staff", icon: Users },
+  { labelKey: "nav.students", href: "/students", icon: GraduationCap },
+  { labelKey: "nav.attendance", href: "/attendance", icon: CalendarCheck },
+  { labelKey: "nav.fees", href: "/fees", icon: Banknote },
+  { labelKey: "nav.exams", href: "/exams", icon: ClipboardList },
+  { labelKey: "nav.library", href: "/library", icon: BookOpen },
+  { labelKey: "nav.transport", href: "/transport", icon: Bus },
+  { labelKey: "nav.notifications", href: "/notifications", icon: Bell },
+  { labelKey: "nav.settings", href: "/settings", icon: Settings },
 ];
 
 interface SidebarProps {
@@ -52,6 +53,7 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useI18n();
 
   async function handleLogout() {
     const { createClient } = await import("@/lib/supabase/client");
@@ -81,7 +83,7 @@ export function Sidebar({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto" aria-label="Main navigation">
         {items.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/");
@@ -96,10 +98,10 @@ export function Sidebar({
                   ? "bg-accent text-white"
                   : "text-white/70 hover:bg-white/10 hover:text-white"
               )}
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? t(item.labelKey) : undefined}
             >
               <item.icon className="h-5 w-5 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && <span>{t(item.labelKey)}</span>}
             </Link>
           );
         })}
@@ -127,11 +129,11 @@ export function Sidebar({
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-colors"
-          title={collapsed ? "Log out" : undefined}
-          aria-label="Log out"
+          title={collapsed ? t("auth.logout") : undefined}
+          aria-label={t("auth.logout")}
         >
           <LogOut className="h-5 w-5 shrink-0" />
-          {!collapsed && <span>Log out</span>}
+          {!collapsed && <span>{t("auth.logout")}</span>}
         </button>
       </div>
     </aside>

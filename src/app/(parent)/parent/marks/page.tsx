@@ -7,6 +7,7 @@ import { AlertCircle, ClipboardCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useI18n } from "@/i18n/provider";
 
 interface MarkRecord {
   id: string;
@@ -62,6 +63,7 @@ async function fetchMarks(childId: string | null): Promise<MarkRecord[]> {
 }
 
 function ParentMarksContent() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const childId = searchParams.get("child");
 
@@ -75,7 +77,7 @@ function ParentMarksContent() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-10 w-10 text-danger mb-3" />
-        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
         <p className="text-xs text-slate mt-1">{error.message}</p>
       </div>
     );
@@ -83,7 +85,7 @@ function ParentMarksContent() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Marks & Report Cards" description="Published exam results" />
+      <PageHeader title={t("parent.recentMarks")} description={t("parent.examResults")} />
 
       {loading ? (
         <div className="space-y-2">
@@ -92,7 +94,7 @@ function ParentMarksContent() {
           ))}
         </div>
       ) : marks.length === 0 ? (
-        <EmptyState icon={ClipboardCheck} title="No published results" description="Exam results will appear here once published by your school." />
+        <EmptyState icon={ClipboardCheck} title={t("parent.noMarks")} description={t("common.noData")} />
       ) : (
         <div className="space-y-2">
           {marks.map((m) => (
@@ -107,7 +109,7 @@ function ParentMarksContent() {
               </div>
               <div className="text-right">
                 {m.is_absent ? (
-                  <span className="text-sm text-danger">Absent</span>
+                  <span className="text-sm text-danger">{t("common.absent")}</span>
                 ) : (
                   <span className="text-sm font-bold text-ink tabular-nums">
                     {Number(m.marks_obtained)} / {Number(m.exam_subject_schedule?.max_marks || 100)}

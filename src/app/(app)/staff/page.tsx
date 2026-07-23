@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface StaffMember {
   id: string;
@@ -21,18 +22,6 @@ interface StaffMember {
   status: string;
   date_joined: string;
 }
-
-const roleLabels: Record<string, string> = {
-  school_admin: "School Admin",
-  principal: "Principal",
-  teacher: "Teacher",
-  accountant: "Accountant",
-  front_desk: "Front Desk",
-  hr_manager: "HR Manager",
-  librarian: "Librarian",
-  transport_coordinator: "Transport Coord.",
-  exam_controller: "Exam Controller",
-};
 
 const statusColors: Record<string, string> = {
   active: "bg-success/10 text-success",
@@ -56,6 +45,19 @@ async function fetchStaff(schoolId: string): Promise<StaffMember[]> {
 export default function StaffPage() {
   const router = useRouter();
   const schoolId = useSchoolId();
+  const { t } = useI18n();
+
+  const roleLabels: Record<string, string> = {
+    school_admin: t("staff.schoolAdmin"),
+    principal: t("staff.principal"),
+    teacher: t("staff.teacher"),
+    accountant: t("staff.accountant"),
+    front_desk: t("staff.frontDesk"),
+    hr_manager: t("staff.hrManager"),
+    librarian: t("staff.librarian"),
+    transport_coordinator: t("staff.transportCoord"),
+    exam_controller: t("staff.examController"),
+  };
 
   const { data: staff = [], isLoading: loading, error: queryError } = useQuery({
     queryKey: queryKeys.school.staff(schoolId),
@@ -65,10 +67,17 @@ export default function StaffPage() {
 
   const error = queryError ? queryError.message : null;
 
+  const statusLabels: Record<string, string> = {
+    active: t("common.active"),
+    on_leave: t("staff.onLeave"),
+    suspended: t("staff.suspended"),
+    terminated: t("staff.terminated"),
+  };
+
   const columns = [
     { 
       key: "full_name", 
-      header: "Name",
+      header: t("common.name"),
       renderPreview: (item: StaffMember) => (
         <div className="space-y-2">
           <div>
@@ -77,15 +86,15 @@ export default function StaffPage() {
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <p className="text-muted-foreground">Phone</p>
+              <p className="text-muted-foreground">{t("common.phone")}</p>
               <p className="font-medium">{item.phone || "—"}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Status</p>
-              <p className="font-medium capitalize">{item.status.replace("_", " ")}</p>
+              <p className="text-muted-foreground">{t("common.status")}</p>
+              <p className="font-medium">{statusLabels[item.status] || item.status}</p>
             </div>
             <div className="col-span-2">
-              <p className="text-muted-foreground">Joined</p>
+              <p className="text-muted-foreground">{t("common.joined")}</p>
               <p className="font-medium">
                 {item.date_joined
                   ? new Date(item.date_joined).toLocaleDateString("en-PK")
@@ -98,28 +107,28 @@ export default function StaffPage() {
     },
     {
       key: "role",
-      header: "Role",
+      header: t("staff.role"),
       render: (item: StaffMember) => (
         <span className="text-sm">{roleLabels[item.role] || item.role}</span>
       ),
     },
-    { key: "phone", header: "Phone" },
+    { key: "phone", header: t("common.phone") },
     {
       key: "status",
-      header: "Status",
+      header: t("common.status"),
       render: (item: StaffMember) => (
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
             statusColors[item.status] || "bg-slate/10 text-slate"
           }`}
         >
-          {item.status.replace("_", " ")}
+          {statusLabels[item.status] || item.status}
         </span>
       ),
     },
     {
       key: "date_joined",
-      header: "Joined",
+      header: t("common.joined"),
       render: (item: StaffMember) =>
         item.date_joined
           ? new Date(item.date_joined).toLocaleDateString("en-PK")
@@ -129,15 +138,15 @@ export default function StaffPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Staff" }]} />
+      <Breadcrumbs items={[{ label: t("staff.title") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Staff Management"
-        description="Manage your school's staff members and their roles"
+        title={t("staff.management")}
+        description={t("staff.manageStaff")}
         action={
           <Button className="bg-accent hover:bg-accent/90 text-white">
             <Plus className="h-4 w-4 mr-2" />
-            Add Staff
+            {t("staff.addStaff")}
           </Button>
         }
       />
@@ -160,16 +169,16 @@ export default function StaffPage() {
       ) : staff.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="No staff members yet"
-          description="Add your first staff member to get started. They'll receive an email invitation to set their password."
-          action={{ label: "Add Staff", onClick: () => router.push("/staff/invite") }}
+          title={t("staff.noStaffYet")}
+          description={t("staff.addFirstStaff")}
+          action={{ label: t("staff.addStaff"), onClick: () => router.push("/staff/invite") }}
         />
       ) : (
         <DataTable
           data={staff}
           columns={columns}
           searchKeys={["full_name", "role", "phone"]}
-          searchPlaceholder="Search by name, role, or phone..."
+          searchPlaceholder={t("staff.searchByNameRolePhone")}
         />
       )}
     </div>

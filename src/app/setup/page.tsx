@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { useI18n } from "@/i18n/provider";
 
 export default function SetupPage() {
+  const { t } = useI18n();
   const [step, setStep] = useState(1);
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -24,18 +26,18 @@ export default function SetupPage() {
       });
       const data = await res.json();
       if (data.tablesExist) {
-        setStatus(`Tables verified! Found ${data.tables?.length || 0} tables.`);
-        toast.success("Tables verified", { description: `Found ${data.tables?.length || 0} tables.` });
+        setStatus(`${t("setup.tablesVerified")}! Found ${data.tables?.length || 0} tables.`);
+        toast.success(t("setup.tablesVerified"), { description: `Found ${data.tables?.length || 0} tables.` });
         setStep(2);
       } else {
         setError(
-          "Tables not found. Please run the SQL migrations first."
+          `${t("setup.tablesNotFound")}. ${t("setup.tablesNotFoundDesc")}`
         );
-        toast.error("Tables not found", { description: "Please run the SQL migrations first." });
+        toast.error(t("setup.tablesNotFound"), { description: t("setup.tablesNotFoundDesc") });
       }
     } catch {
-      setError("Failed to check tables. Is the app running?");
-      toast.error("Failed to check tables", { description: "Is the app running?" });
+      setError(`${t("setup.failedCheckTables")}. ${t("setup.failedCheckTablesDesc")}`);
+      toast.error(t("setup.failedCheckTables"), { description: t("setup.failedCheckTablesDesc") });
     }
     setLoading(false);
   }
@@ -51,16 +53,16 @@ export default function SetupPage() {
       });
       const data = await res.json();
       if (data.plansExist && data.plans?.length > 0) {
-        setStatus(`Plans verified! ${data.plans.length} plans found.`);
-        toast.success("Plans verified", { description: `${data.plans.length} plans found.` });
+        setStatus(`${t("setup.plansVerified")}! ${data.plans.length} plans found.`);
+        toast.success(t("setup.plansVerified"), { description: `${data.plans.length} plans found.` });
         setStep(3);
       } else {
-        setError("Plans not found. Please run 003_seed_plans.sql");
-        toast.error("Plans not found", { description: "Please run 003_seed_plans.sql" });
+        setError(`${t("setup.plansNotFound")}. ${t("setup.plansNotFoundDesc")}`);
+        toast.error(t("setup.plansNotFound"), { description: t("setup.plansNotFoundDesc") });
       }
     } catch {
-      setError("Failed to check plans");
-      toast.error("Failed to check plans");
+      setError(t("setup.failedCheckPlans"));
+      toast.error(t("setup.failedCheckPlans"));
     }
     setLoading(false);
   }
@@ -83,19 +85,19 @@ export default function SetupPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setStatus("Platform admin created! Redirecting to login...");
-        toast.success("Platform admin created", { description: "Redirecting to login..." });
+        setStatus(`${t("setup.adminCreated")}! ${t("setup.adminCreatedDesc")}`);
+        toast.success(t("setup.adminCreated"), { description: t("setup.adminCreatedDesc") });
         setStep(4);
         setTimeout(() => {
           window.location.href = "/login";
         }, 2000);
       } else {
-        setError(data.error || "Failed to create admin");
-        toast.error("Failed to create admin", { description: data.error || "Please try again" });
+        setError(data.error || t("setup.failedCreateAdmin"));
+        toast.error(t("setup.failedCreateAdmin"), { description: data.error || t("setup.failedCreateAdminDesc") });
       }
     } catch {
-      setError("Failed to create admin");
-      toast.error("Failed to create admin", { description: "An unexpected error occurred" });
+      setError(t("setup.failedCreateAdmin"));
+      toast.error(t("setup.failedCreateAdmin"), { description: t("setup.failedCreateAdminGenericDesc") });
     }
     setLoading(false);
   }
@@ -123,16 +125,16 @@ export default function SetupPage() {
             S
           </div>
           <span className="font-display text-2xl font-semibold text-ink">
-            Sanad Setup
+            {t("setup.title")}
           </span>
         </div>
 
         <div className="bg-paper-raised rounded-xl border border-slate-light p-8">
           <h1 className="font-display text-xl font-semibold text-ink mb-2">
-            Initial Setup
+            {t("setup.initialSetup")}
           </h1>
           <p className="text-sm text-slate mb-6">
-            Follow these steps to get Sanad running.
+            {t("setup.description")}
           </p>
 
           {/* Progress */}
@@ -165,10 +167,10 @@ export default function SetupPage() {
             <div className="space-y-4">
               <div className="bg-paper rounded-lg p-4 border border-slate-light">
                 <h3 className="font-medium text-ink mb-2">
-                  Step 1: Run SQL Migrations
+                  {t("setup.step1Title")}
                 </h3>
                 <p className="text-sm text-slate mb-3">
-                  Open your Supabase SQL Editor and run these 3 files:
+                  {t("setup.step1Desc")}
                 </p>
                 <a
                   href="https://supabase.com/dashboard/project/_/sql/new"
@@ -176,7 +178,7 @@ export default function SetupPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-sm text-accent hover:text-accent-ink mb-3"
                 >
-                  Open SQL Editor <ExternalLink className="h-3 w-3" />
+                  {t("setup.openSqlEditor")} <ExternalLink className="h-3 w-3" />
                 </a>
 
                 <div className="space-y-2">
@@ -199,8 +201,7 @@ export default function SetupPage() {
                 </div>
 
                 <p className="text-xs text-slate mt-3">
-                  For each file: click into the editor, paste the SQL, click
-                  &quot;Run&quot;.
+                  {t("setup.step1Hint")}
                 </p>
               </div>
 
@@ -209,7 +210,7 @@ export default function SetupPage() {
                 isLoading={loading}
                 className="w-full bg-accent hover:bg-accent/90 text-white"
               >
-                I&apos;ve run the migrations — check
+                {t("setup.checkMigrations")}
               </Button>
             </div>
           )}
@@ -218,14 +219,14 @@ export default function SetupPage() {
           {step === 2 && (
             <div className="space-y-4">
               <p className="text-sm text-slate">
-                Verifying that subscription plans were seeded correctly...
+                {t("setup.verifyingPlans")}
               </p>
               <Button
                 onClick={checkPlans}
                 isLoading={loading}
                 className="w-full bg-accent hover:bg-accent/90 text-white"
               >
-                Verify plans exist
+                {t("setup.verifyPlans")}
               </Button>
             </div>
           )}
@@ -234,42 +235,42 @@ export default function SetupPage() {
           {step === 3 && (
             <form onSubmit={createAdmin} className="space-y-4">
               <p className="text-sm text-slate">
-                Create your Platform Super Admin account:
+                {t("setup.createAdminDesc")}
               </p>
               <div>
                 <Label htmlFor="fullName" className="text-ink">
-                  Full name
+                  {t("setup.fullName")}
                 </Label>
                 <Input
                   id="fullName"
                   name="fullName"
-                  placeholder="Shahab Ahmed"
+                  placeholder={t("setup.fullNamePlaceholder")}
                   className="mt-1.5"
                   required
                 />
               </div>
               <div>
                 <Label htmlFor="email" className="text-ink">
-                  Email
+                  {t("auth.email")}
                 </Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="admin@sanad.pk"
+                  placeholder={t("setup.emailPlaceholder")}
                   className="mt-1.5"
                   required
                 />
               </div>
               <div>
                 <Label htmlFor="password" className="text-ink">
-                  Password
+                  {t("auth.password")}
                 </Label>
                 <Input
                   id="password"
                   name="password"
                   type="password"
-                  placeholder="Min. 8 characters"
+                  placeholder={t("auth.passwordMinPlaceholder")}
                   className="mt-1.5"
                   required
                   minLength={8}
@@ -280,7 +281,7 @@ export default function SetupPage() {
                 isLoading={loading}
                 className="w-full bg-accent hover:bg-accent/90 text-white"
               >
-                Create platform admin
+                {t("setup.createAdmin")}
               </Button>
             </form>
           )}
@@ -290,14 +291,14 @@ export default function SetupPage() {
             <div className="text-center space-y-4">
               <CheckCircle className="h-12 w-12 text-success mx-auto" />
               <h2 className="font-display text-xl font-semibold text-ink">
-                Setup Complete!
+                {t("setup.complete")}
               </h2>
               <p className="text-sm text-slate">
-                You can now log in and start managing your school.
+                {t("setup.completeDesc")}
               </p>
               <a href="/login">
                 <Button className="bg-accent hover:bg-accent/90 text-white">
-                  Go to Login
+                  {t("setup.goToLogin")}
                 </Button>
               </a>
             </div>

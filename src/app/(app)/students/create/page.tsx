@@ -15,6 +15,7 @@ import { AlertCircle, ArrowLeft, Save } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface ClassOption {
   id: string;
@@ -26,6 +27,7 @@ export default function CreateStudentPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const schoolId = useSchoolId();
+  const { t } = useI18n();
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
   const [formData, setFormData] = useState({
@@ -72,13 +74,13 @@ export default function CreateStudentPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.school.students(schoolId) });
-      toast.success("Student added", {
+      toast.success(t("students.studentCreated"), {
         description: `${formData.full_name} has been enrolled successfully.`,
       });
       router.push("/students");
     },
     onError: (err: Error) => {
-      toast.error("Failed to add student", {
+      toast.error(t("common.error"), {
         description: err.message,
       });
     },
@@ -96,15 +98,15 @@ export default function CreateStudentPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs items={[{ label: "Students", href: "/students" }, { label: "Add Student" }]} />
+      <Breadcrumbs items={[{ label: t("students.title"), href: "/students" }, { label: t("students.addStudent") }]} />
 
       <PageHeader
-        title="Add Student"
-        description="Enroll a new student in your school"
+        title={t("students.addStudent")}
+        description={t("students.createStudentDesc")}
         action={
           <Button variant="outline" onClick={() => router.push("/students")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Students
+            {t("common.back")} {t("students.title")}
           </Button>
         }
       />
@@ -112,7 +114,7 @@ export default function CreateStudentPage() {
       {classesError && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="h-10 w-10 text-danger mb-3" />
-          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
           <p className="text-xs text-slate mt-1">{classesError.message}</p>
         </div>
       )}
@@ -120,51 +122,51 @@ export default function CreateStudentPage() {
       <form onSubmit={handleSubmit}>
         <Card className="border-slate-light">
           <CardHeader>
-            <CardTitle className="text-lg font-display">Student Information</CardTitle>
+            <CardTitle className="text-lg font-display">{t("students.createStudent")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="full_name" className="text-ink">Full Name *</Label>
+                <Label htmlFor="full_name" className="text-ink">{t("students.studentName")} *</Label>
                 <Input
                   id="full_name"
                   value={formData.full_name}
                   onChange={(e) => setFormData(f => ({ ...f, full_name: e.target.value }))}
-                  placeholder="Muhammad Ali"
+                  placeholder={t("students.create.studentNamePlaceholder")}
                   className="mt-1.5"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="father_name" className="text-ink">Father&apos;s Name *</Label>
+                <Label htmlFor="father_name" className="text-ink">{t("students.fatherName")} *</Label>
                 <Input
                   id="father_name"
                   value={formData.father_name}
                   onChange={(e) => setFormData(f => ({ ...f, father_name: e.target.value }))}
-                  placeholder="Ahmed Ali"
+                  placeholder={t("students.create.fatherNamePlaceholder")}
                   className="mt-1.5"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="admission_number" className="text-ink">Admission Number *</Label>
+                <Label htmlFor="admission_number" className="text-ink">{t("students.admissionNo")} *</Label>
                 <Input
                   id="admission_number"
                   value={formData.admission_number}
                   onChange={(e) => setFormData(f => ({ ...f, admission_number: e.target.value }))}
-                  placeholder="ADM-001"
+                  placeholder={t("students.create.admissionNoPlaceholder")}
                   className="mt-1.5"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="gender" className="text-ink">Gender *</Label>
+                <Label htmlFor="gender" className="text-ink">{t("students.gender")} *</Label>
                 <Select
                   id="gender"
                   value={formData.gender}
                   onChange={(e) => setFormData(f => ({ ...f, gender: e.target.value }))}
                   className="mt-1.5"
-                  placeholder="Select gender"
+                  placeholder={t("students.create.selectGender")}
                   required
                   options={[
                     { value: "male", label: "Male" },
@@ -173,7 +175,7 @@ export default function CreateStudentPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="date_of_birth" className="text-ink">Date of Birth</Label>
+                <Label htmlFor="date_of_birth" className="text-ink">{t("students.dateOfBirth")}</Label>
                 <Input
                   id="date_of_birth"
                   type="date"
@@ -183,32 +185,32 @@ export default function CreateStudentPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="contact_number" className="text-ink">Contact Number</Label>
+                <Label htmlFor="contact_number" className="text-ink">{t("students.contact")}</Label>
                 <Input
                   id="contact_number"
                   value={formData.contact_number}
                   onChange={(e) => setFormData(f => ({ ...f, contact_number: e.target.value }))}
-                  placeholder="0300-1234567"
+                  placeholder={t("students.create.contactPlaceholder")}
                   className="mt-1.5"
                 />
               </div>
             </div>
             <div>
-              <Label htmlFor="address" className="text-ink">Address</Label>
+              <Label htmlFor="address" className="text-ink">{t("common.address")}</Label>
               <Input
                 id="address"
                 value={formData.address}
                 onChange={(e) => setFormData(f => ({ ...f, address: e.target.value }))}
-                placeholder="Full address"
+                placeholder={t("students.create.addressPlaceholder")}
                 className="mt-1.5"
               />
             </div>
 
             <div className="border-t border-slate-light pt-4">
-              <h3 className="text-sm font-medium text-ink mb-3">Class Assignment</h3>
+              <h3 className="text-sm font-medium text-ink mb-3">{t("students.class")}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="class" className="text-ink">Class</Label>
+                  <Label htmlFor="class" className="text-ink">{t("students.class")}</Label>
                   <Select
                     id="class"
                     value={selectedClass}
@@ -217,18 +219,18 @@ export default function CreateStudentPage() {
                       setSelectedSection("");
                     }}
                     className="mt-1.5"
-                    placeholder="Select class"
+                    placeholder={t("students.create.selectClass")}
                     options={classes.map(c => ({ value: c.id, label: c.name }))}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="section" className="text-ink">Section</Label>
+                  <Label htmlFor="section" className="text-ink">{t("students.section")}</Label>
                   <Select
                     id="section"
                     value={selectedSection}
                     onChange={(e) => setSelectedSection(e.target.value)}
                     className="mt-1.5"
-                    placeholder="Select section"
+                    placeholder={t("students.create.selectSection")}
                     options={(selectedClassData?.sections || []).map(s => ({ value: s.id, label: s.name }))}
                     disabled={!selectedClass}
                   />
@@ -238,11 +240,11 @@ export default function CreateStudentPage() {
 
             <div className="flex items-center justify-end gap-3 pt-4">
               <Button type="button" variant="outline" onClick={() => router.push("/students")}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button type="submit" isLoading={createStudent.isPending} className="bg-accent hover:bg-accent/90 text-white">
                 <Save className="h-4 w-4 mr-2" />
-                Add Student
+                {t("students.addStudent")}
               </Button>
             </div>
           </CardContent>

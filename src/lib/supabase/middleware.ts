@@ -40,6 +40,8 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Public paths that don't require authentication
+  // NOTE: /platform is intentionally NOT public — platform admin requires auth
+  // /payment pages are also auth-gated — they show user-specific transaction data
   const publicPaths = [
     "/",
     "/login",
@@ -47,8 +49,6 @@ export async function updateSession(request: NextRequest) {
     "/setup",
     "/privacy",
     "/terms",
-    "/platform",
-    "/payment",
   ];
 
   const pathname = request.nextUrl.pathname;

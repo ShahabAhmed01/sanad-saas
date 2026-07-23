@@ -19,6 +19,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/provider";
 
 interface CommandItem {
   id: string;
@@ -29,42 +30,59 @@ interface CommandItem {
   category: string;
 }
 
-const commands: CommandItem[] = [
-  // Navigation
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", category: "Navigate" },
-  { id: "staff", label: "Staff Management", icon: Users, href: "/staff", category: "Navigate" },
-  { id: "students", label: "Student Management", icon: GraduationCap, href: "/students", category: "Navigate" },
-  { id: "attendance", label: "Attendance", icon: CalendarCheck, href: "/attendance", category: "Navigate" },
-  { id: "fees", label: "Fee Management", icon: Banknote, href: "/fees", category: "Navigate" },
-  { id: "exams", label: "Exams", icon: ClipboardList, href: "/exams", category: "Navigate" },
-  { id: "library", label: "Library", icon: BookOpen, href: "/library", category: "Navigate" },
-  { id: "transport", label: "Transport", icon: Bus, href: "/transport", category: "Navigate" },
-  { id: "notifications", label: "Notifications", icon: Bell, href: "/notifications", category: "Navigate" },
-  { id: "settings", label: "Settings", icon: Settings, href: "/settings", category: "Navigate" },
-  { id: "audit", label: "Audit Log", icon: FileText, href: "/audit", category: "Navigate" },
+interface CommandItemKey {
+  id: string;
+  labelKey: string;
+  descriptionKey?: string;
+  icon: React.ElementType;
+  href: string;
+  categoryKey: string;
+}
 
-  // Quick Actions
-  { id: "mark-attendance", label: "Mark Attendance", description: "Take today's attendance", icon: CalendarCheck, href: "/attendance/mark", category: "Quick Actions" },
-  { id: "add-student", label: "Add Student", description: "Enroll a new student", icon: GraduationCap, href: "/students", category: "Quick Actions" },
-  { id: "invite-staff", label: "Invite Staff Member", description: "Send an invitation email", icon: Users, href: "/staff/invite", category: "Quick Actions" },
-  { id: "create-exam", label: "Create Exam", description: "Schedule a new exam", icon: ClipboardList, href: "/exams/create", category: "Quick Actions" },
-  { id: "generate-invoice", label: "Generate Fee Invoice", description: "Bulk generate invoices", icon: Banknote, href: "/fees/generate", category: "Quick Actions" },
-  { id: "collect-payment", label: "Collect Payment", description: "Record a fee payment", icon: Banknote, href: "/fees/collect", category: "Quick Actions" },
-  { id: "create-homework", label: "Create Homework", icon: FileText, href: "/homework/create", category: "Quick Actions" },
-  { id: "create-announcement", label: "Create Announcement", icon: Bell, href: "/announcements/create", category: "Quick Actions" },
-  { id: "issue-book", label: "Issue / Return Book", icon: BookOpen, href: "/library/issue", category: "Quick Actions" },
-  { id: "assign-transport", label: "Assign Transport Route", icon: Bus, href: "/transport/assign", category: "Quick Actions" },
-  { id: "gradebook", label: "Enter Marks", icon: ClipboardCheck, href: "/gradebook/entry", category: "Quick Actions" },
-  { id: "report-cards", label: "View Report Cards", icon: FileText, href: "/exams/report-cards", category: "Quick Actions" },
+const commandKeys: CommandItemKey[] = [
+  { id: "dashboard", labelKey: "commandPalette.dashboard", icon: LayoutDashboard, href: "/dashboard", categoryKey: "commandPalette.navigate" },
+  { id: "staff", labelKey: "commandPalette.staffManagement", icon: Users, href: "/staff", categoryKey: "commandPalette.navigate" },
+  { id: "students", labelKey: "commandPalette.studentManagement", icon: GraduationCap, href: "/students", categoryKey: "commandPalette.navigate" },
+  { id: "attendance", labelKey: "commandPalette.attendance", icon: CalendarCheck, href: "/attendance", categoryKey: "commandPalette.navigate" },
+  { id: "fees", labelKey: "commandPalette.feeManagement", icon: Banknote, href: "/fees", categoryKey: "commandPalette.navigate" },
+  { id: "exams", labelKey: "commandPalette.exams", icon: ClipboardList, href: "/exams", categoryKey: "commandPalette.navigate" },
+  { id: "library", labelKey: "commandPalette.library", icon: BookOpen, href: "/library", categoryKey: "commandPalette.navigate" },
+  { id: "transport", labelKey: "commandPalette.transport", icon: Bus, href: "/transport", categoryKey: "commandPalette.navigate" },
+  { id: "notifications", labelKey: "commandPalette.notifications", icon: Bell, href: "/notifications", categoryKey: "commandPalette.navigate" },
+  { id: "settings", labelKey: "commandPalette.settings", icon: Settings, href: "/settings", categoryKey: "commandPalette.navigate" },
+  { id: "audit", labelKey: "commandPalette.auditLog", icon: FileText, href: "/audit", categoryKey: "commandPalette.navigate" },
+
+  { id: "mark-attendance", labelKey: "commandPalette.markAttendance", descriptionKey: "commandPalette.markAttendanceDesc", icon: CalendarCheck, href: "/attendance/mark", categoryKey: "commandPalette.quickActions" },
+  { id: "add-student", labelKey: "commandPalette.addStudent", descriptionKey: "commandPalette.addStudentDesc", icon: GraduationCap, href: "/students", categoryKey: "commandPalette.quickActions" },
+  { id: "invite-staff", labelKey: "commandPalette.inviteStaffMember", descriptionKey: "commandPalette.inviteStaffMemberDesc", icon: Users, href: "/staff/invite", categoryKey: "commandPalette.quickActions" },
+  { id: "create-exam", labelKey: "commandPalette.createExam", descriptionKey: "commandPalette.createExamDesc", icon: ClipboardList, href: "/exams/create", categoryKey: "commandPalette.quickActions" },
+  { id: "generate-invoice", labelKey: "commandPalette.generateFeeInvoice", descriptionKey: "commandPalette.generateFeeInvoiceDesc", icon: Banknote, href: "/fees/generate", categoryKey: "commandPalette.quickActions" },
+  { id: "collect-payment", labelKey: "commandPalette.collectPayment", descriptionKey: "commandPalette.collectPaymentDesc", icon: Banknote, href: "/fees/collect", categoryKey: "commandPalette.quickActions" },
+  { id: "create-homework", labelKey: "commandPalette.createHomework", icon: FileText, href: "/homework/create", categoryKey: "commandPalette.quickActions" },
+  { id: "create-announcement", labelKey: "commandPalette.createAnnouncement", icon: Bell, href: "/announcements/create", categoryKey: "commandPalette.quickActions" },
+  { id: "issue-book", labelKey: "commandPalette.issueReturnBook", icon: BookOpen, href: "/library/issue", categoryKey: "commandPalette.quickActions" },
+  { id: "assign-transport", labelKey: "commandPalette.assignTransportRoute", icon: Bus, href: "/transport/assign", categoryKey: "commandPalette.quickActions" },
+  { id: "gradebook", labelKey: "commandPalette.enterMarks", icon: ClipboardCheck, href: "/gradebook/entry", categoryKey: "commandPalette.quickActions" },
+  { id: "report-cards", labelKey: "commandPalette.viewReportCards", icon: FileText, href: "/exams/report-cards", categoryKey: "commandPalette.quickActions" },
 ];
 
 export function CommandPalette() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  const commands: CommandItem[] = commandKeys.map((cmd) => ({
+    id: cmd.id,
+    label: t(cmd.labelKey),
+    description: cmd.descriptionKey ? t(cmd.descriptionKey) : undefined,
+    icon: cmd.icon,
+    href: cmd.href,
+    category: t(cmd.categoryKey),
+  }));
 
   const filtered = commands.filter(
     (cmd) =>
@@ -173,9 +191,9 @@ export function CommandPalette() {
                 setQuery(e.target.value);
                 setSelectedIndex(0);
               }}
-              placeholder="Search commands, pages, actions..."
+              placeholder={t("commandPalette.searchPlaceholder")}
               className="flex-1 h-12 bg-transparent text-foreground placeholder:text-muted-foreground outline-none text-sm"
-              aria-label="Search commands"
+              aria-label={t("commandPalette.searchPlaceholder")}
             />
             <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-xs text-muted-foreground bg-muted rounded-md border border-border">
               ESC
@@ -186,7 +204,7 @@ export function CommandPalette() {
           <div ref={listRef} className="max-h-80 overflow-y-auto p-2">
             {flatFiltered.length === 0 ? (
               <div className="py-8 text-center text-sm text-muted-foreground">
-                No results found for &quot;{query}&quot;
+                {t("commandPalette.noResults", { query })}
               </div>
             ) : (
               Object.entries(grouped).map(([category, items]) => (
@@ -232,15 +250,15 @@ export function CommandPalette() {
           <div className="flex items-center gap-4 px-4 py-2.5 border-t border-border text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">↑↓</kbd>
-              Navigate
+              {t("commandPalette.navigate")}
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">↵</kbd>
-              Select
+              {t("commandPalette.select")}
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">esc</kbd>
-              Close
+              {t("commandPalette.close")}
             </span>
           </div>
         </div>

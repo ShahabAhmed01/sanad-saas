@@ -17,8 +17,9 @@
   --color-ink: #12332F;
   --color-paper: #F7F6F1;
   --color-paper-raised: #FFFFFF;
-  --color-accent: #A07426;
-  --color-accent-ink: #7A5A1F;
+  /* Darkened accent to meet WCAG AA 4.5:1 contrast ratio on paper (#F7F6F1) */
+  --color-accent: #8A6520;
+  --color-accent-ink: #6B4F18;
   --color-success: #1F7A5C;
   --color-danger: #BD4545;
   --color-slate: #575750;
@@ -63,7 +64,7 @@
   --color-sidebar-foreground: var(--paper-raised);
   --color-sidebar-primary: var(--accent);
   --color-sidebar-primary-foreground: var(--paper-raised);
-  --color-sidebar-accent: rgba(184, 134, 47, 0.15);
+  --color-sidebar-accent: color-mix(in srgb, var(--accent) 15%, transparent);
   --color-sidebar-accent-foreground: var(--paper-raised);
   --color-sidebar-border: rgba(255, 255, 255, 0.1);
   --color-sidebar-ring: var(--accent);
@@ -128,7 +129,7 @@
   --color-sidebar-foreground: var(--ink);
   --color-sidebar-primary: var(--accent);
   --color-sidebar-primary-foreground: var(--paper-raised);
-  --color-sidebar-accent: rgba(184, 134, 47, 0.2);
+  --color-sidebar-accent: color-mix(in srgb, var(--accent) 20%, transparent);
   --color-sidebar-accent-foreground: var(--paper-raised);
   --color-sidebar-border: rgba(255, 255, 255, 0.08);
   --color-sidebar-ring: var(--accent);
@@ -136,8 +137,8 @@
 
 /* Theme overrides — applied by ThemeProvider via inline styles */
 [data-theme="emerald-dusk"] { --accent: #1A7A5A; --accent-ink: #0E5C42; }
-[data-theme="warm-sand"] { --accent: #A6612E; --accent-ink: #7A4A22; }
-[data-theme="midnight-royal"] { --accent: #4A5FA5; --accent-ink: #374880; }
+[data-theme="warm-sand"] { --accent: #8A5420; --accent-ink: #6B4018; }
+[data-theme="midnight-royal"] { --accent: #3D5290; --accent-ink: #2E3F6D; }
 
 /* =========================================================
    BASE STYLES

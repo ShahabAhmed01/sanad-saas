@@ -12,22 +12,23 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-
-const moreItems = [
-  { label: "Exams", href: "/exams", icon: ClipboardList },
-  { label: "Library", href: "/library", icon: BookOpen },
-  { label: "Transport", href: "/transport", icon: Bus },
-  { label: "Notifications", href: "/notifications", icon: Bell },
-  { label: "Settings", href: "/settings", icon: Settings },
-];
+import { useI18n } from "@/i18n/provider";
 
 export default function MorePage() {
+  const { t } = useI18n();
   const router = useRouter();
+  const moreItems = [
+    { label: t("more.exams"), href: "/exams", icon: ClipboardList },
+    { label: t("more.library"), href: "/library", icon: BookOpen },
+    { label: t("more.transport"), href: "/transport", icon: Bus },
+    { label: t("more.notifications"), href: "/notifications", icon: Bell },
+    { label: t("more.settings"), href: "/settings", icon: Settings },
+  ];
   return (
     <>
-      <Breadcrumbs items={[{ label: "More" }]} />
+      <Breadcrumbs items={[{ label: t("nav.more") }]} />
       <div className="space-y-4">
-      <h1 className="font-display text-2xl font-bold text-ink">More</h1>
+      <h1 className="font-display text-2xl font-bold text-ink">{t("more.title")}</h1>
 
       <div className="space-y-2">
         {moreItems.map((item) => (
@@ -55,7 +56,7 @@ export default function MorePage() {
           <div className="w-10 h-10 rounded-lg bg-danger/10 flex items-center justify-center">
             <LogOut className="h-5 w-5 text-danger" />
           </div>
-          <span className="font-medium text-danger">Log out</span>
+          <span className="font-medium text-danger">{t("more.logout")}</span>
         </button>
       </div>
     </div>

@@ -11,6 +11,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/i18n/provider";
 
 interface FeeInvoice {
   id: string;
@@ -66,6 +67,7 @@ async function fetchFeeData(): Promise<{
 
 export default function FeesPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { data, isLoading, error } = useQuery({
     queryKey: ["fees"],
     queryFn: fetchFeeData,
@@ -75,10 +77,10 @@ export default function FeesPage() {
   const stats = data?.stats || { total: 0, collected: 0, pending: 0 };
 
   const columns = [
-    { key: "period_label", header: "Period" },
+    { key: "period_label", header: t("fees.period") },
     {
       key: "total_amount",
-      header: "Amount",
+      header: t("fees.amount"),
       className: "text-right",
       render: (item: FeeInvoice) => (
         <span className="tabular-nums font-medium">
@@ -88,20 +90,20 @@ export default function FeesPage() {
     },
     {
       key: "due_date",
-      header: "Due Date",
+      header: t("fees.due_date"),
       render: (item: FeeInvoice) =>
         new Date(item.due_date).toLocaleDateString("en-PK"),
     },
     {
       key: "status",
-      header: "Status",
+      header: t("common.status"),
       render: (item: FeeInvoice) => (
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
             statusColors[item.status] || "bg-slate/10 text-slate"
           }`}
         >
-          {item.status.replace("_", " ")}
+          {t(`fees.${item.status}`)}
         </span>
       ),
     },
@@ -109,20 +111,20 @@ export default function FeesPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Fees" }]} />
+      <Breadcrumbs items={[{ label: t("nav.fees") }]} />
       <div className="space-y-6">
         <PageHeader
-          title="Fees & Finance"
-          description="Manage fee structures, collections, and payments"
+          title={t("fees.title")}
+          description={t("fees.description")}
           action={
             <div className="flex gap-2">
               <Link href="/fees/structure">
-                <Button variant="outline">Fee Structure</Button>
+                <Button variant="outline">{t("fees.fee_structure")}</Button>
               </Link>
               <Link href="/fees/generate">
                 <Button className="bg-accent hover:bg-accent/90 text-white">
                   <Plus className="h-4 w-4 mr-2" />
-                  Generate Invoices
+                  {t("fees.generate_invoices")}
                 </Button>
               </Link>
             </div>
@@ -134,7 +136,7 @@ export default function FeesPage() {
             <CardContent className="p-4 flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-danger" />
               <p className="text-danger font-medium">
-                {error instanceof Error ? error.message : "Failed to load fees"}
+                {error instanceof Error ? error.message : t("fees.failed_to_load")}
               </p>
             </CardContent>
           </Card>
@@ -146,7 +148,7 @@ export default function FeesPage() {
             <Card className="border-slate-light">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-slate">
-                  Total Due
+                  {t("fees.total_due")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -158,7 +160,7 @@ export default function FeesPage() {
             <Card className="border-slate-light">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-slate">
-                  Collected
+                  {t("fees.collected")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -170,7 +172,7 @@ export default function FeesPage() {
             <Card className="border-slate-light">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-slate">
-                  Pending
+                  {t("fees.pending")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -195,10 +197,10 @@ export default function FeesPage() {
         ) : invoices.length === 0 ? (
           <EmptyState
             icon={Banknote}
-            title="No invoices yet"
-            description="Set up your fee structure and generate invoices for your students."
+            title={t("fees.no_invoices")}
+            description={t("fees.no_invoices_description")}
             action={{
-              label: "Set up fees",
+              label: t("fees.setup_fees"),
               onClick: () => router.push("/fees/structure"),
             }}
           />
@@ -207,7 +209,7 @@ export default function FeesPage() {
             data={invoices}
             columns={columns}
             searchKeys={["period_label", "status"]}
-            searchPlaceholder="Search by period or status..."
+            searchPlaceholder={t("fees.search_placeholder")}
           />
         )}
       </div>

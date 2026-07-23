@@ -11,6 +11,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { toast } from "sonner";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface Notification {
   id: string;
@@ -32,17 +33,19 @@ const typeIcons: Record<string, string> = {
 
 async function fetchNotifications(schoolId: string): Promise<Notification[]> {
   const supabase = createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("notifications")
     .select("*")
     .eq("school_id", schoolId)
     .order("created_at", { ascending: false });
+  if (error) throw error;
   return data || [];
 }
 
 export default function NotificationsPage() {
   const schoolId = useSchoolId();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
 
   const { data: notifications = [], isLoading: loading, error } = useQuery({
     queryKey: queryKeys.school.notifications(schoolId),
@@ -72,7 +75,7 @@ export default function NotificationsPage() {
     },
     onError: (_err, _id, context) => {
       queryClient.setQueryData(queryKeys.school.notifications(schoolId), context?.previous);
-      toast.error("Failed to mark notification as read");
+      toast.error(t("notifications.count.failedMarkRead"));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.school.notifications(schoolId) });
@@ -101,7 +104,7 @@ export default function NotificationsPage() {
     },
     onError: (_err, _vars, context) => {
       queryClient.setQueryData(queryKeys.school.notifications(schoolId), context?.previous);
-      toast.error("Failed to mark all notifications as read");
+      toast.error(t("notifications.count.failedMarkAll"));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.school.notifications(schoolId) });
@@ -112,18 +115,18 @@ export default function NotificationsPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Notifications" }]} />
+      <Breadcrumbs items={[{ label: t("notifications.title") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Notifications"
+        title={t("notifications.title")}
         description={
-          unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}` : "All caught up!"
+          unreadCount > 0 ? (unreadCount === 1 ? t("notifications.count.one", { count: String(unreadCount) }) : t("notifications.count.other", { count: String(unreadCount) })) : t("leave.allCaughtUp")
         }
         action={
           unreadCount > 0 ? (
             <Button variant="outline" onClick={() => markAllAsReadMutation.mutate()}>
               <CheckCheck className="h-4 w-4 mr-2" />
-              Mark all as read
+              {t("notifications.markAllRead")}
             </Button>
           ) : undefined
         }
@@ -132,7 +135,7 @@ export default function NotificationsPage() {
       {error ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="h-10 w-10 text-danger mb-3" />
-          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
           <p className="text-xs text-slate mt-1">{error.message}</p>
         </div>
       ) : loading ? (
@@ -144,8 +147,8 @@ export default function NotificationsPage() {
       ) : notifications.length === 0 ? (
         <EmptyState
           icon={Bell}
-          title="No notifications"
-          description="You're all caught up! Notifications for attendance, fees, and announcements will appear here."
+          title={t("notifications.noNotifications")}
+          description={t("notifications.notificationsAppear")}
         />
       ) : (
         <div className="space-y-2">
@@ -179,7 +182,7 @@ export default function NotificationsPage() {
                 <button
                   onClick={() => markAsReadMutation.mutate(notification.id)}
                   className="text-slate hover:text-accent hover:bg-muted rounded-lg p-1.5 transition-colors"
-                  title="Mark as read"
+                  title={t("notifications.markAllRead")}
                 >
                   <Check className="h-4 w-4" />
                 </button>

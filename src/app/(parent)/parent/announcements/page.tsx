@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AlertCircle, Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useI18n } from "@/i18n/provider";
 
 interface Announcement {
   id: string;
@@ -38,6 +39,7 @@ async function fetchAnnouncements(): Promise<Announcement[]> {
 }
 
 export default function ParentAnnouncements() {
+  const { t } = useI18n();
   const { data: announcements = [], isLoading: loading, error } = useQuery<Announcement[]>({
     queryKey: ["parent-announcements"],
     queryFn: fetchAnnouncements,
@@ -47,7 +49,7 @@ export default function ParentAnnouncements() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-10 w-10 text-danger mb-3" />
-        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
         <p className="text-xs text-slate mt-1">{error.message}</p>
       </div>
     );
@@ -55,7 +57,7 @@ export default function ParentAnnouncements() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Announcements" description="School announcements" />
+      <PageHeader title={t("parent.announcements")} description={t("parent.latestAnnouncements")} />
 
       {loading ? (
         <div className="space-y-3">
@@ -64,7 +66,7 @@ export default function ParentAnnouncements() {
           ))}
         </div>
       ) : announcements.length === 0 ? (
-        <EmptyState icon={Bell} title="No announcements" description="School announcements will appear here." />
+        <EmptyState icon={Bell} title={t("parent.noAnnouncements")} description={t("common.noData")} />
       ) : (
         <div className="space-y-3">
           {announcements.map((ann) => (

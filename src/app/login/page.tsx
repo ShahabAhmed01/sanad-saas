@@ -9,10 +9,12 @@ import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useI18n } from "@/i18n/provider";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -36,12 +38,12 @@ function LoginForm() {
 
     if (authError) {
       setError(authError.message);
-      toast.error("Sign in failed", { description: authError.message });
+      toast.error(t("auth.sign_in_failed"), { description: authError.message });
       setLoading(false);
       return;
     }
 
-    toast.success("Welcome back!");
+    toast.success(t("auth.welcomeBackToast"));
     router.push("/dashboard");
     router.refresh();
   }
@@ -62,10 +64,10 @@ function LoginForm() {
         {/* Card */}
         <div className="bg-paper-raised rounded-xl border border-slate-light p-8 shadow-sm">
           <h1 className="font-display text-xl font-semibold text-ink mb-1">
-            Welcome back
+            {t("auth.welcomeBack")}
           </h1>
           <p className="text-sm text-slate mb-6">
-            Sign in to your school&apos;s dashboard
+            {t("auth.loginDesc")}
           </p>
 
           {registered && (
@@ -73,7 +75,7 @@ function LoginForm() {
               <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="20 6 9 17 4 12" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              Account created! Please sign in with your credentials.
+              {t("auth.accountCreatedDesc")}
             </div>
           )}
 
@@ -86,13 +88,13 @@ function LoginForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email" className="text-ink">
-                Email
+                {t("auth.email")}
               </Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="admin@school.edu.pk"
+                placeholder={t("auth.emailPlaceholder")}
                 className="mt-1.5"
                 required
                 autoComplete="email"
@@ -100,14 +102,14 @@ function LoginForm() {
             </div>
             <div>
               <Label htmlFor="password" className="text-ink">
-                Password
+                {t("auth.password")}
               </Label>
               <div className="relative mt-1.5">
                 <Input
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder={t("auth.passwordPlaceholder")}
                   required
                   autoComplete="current-password"
                   className="pr-10"
@@ -134,13 +136,13 @@ function LoginForm() {
                   type="checkbox"
                   className="rounded border-slate-light h-4 w-4 accent-accent"
                 />
-                Remember me
+                {t("auth.rememberMe")}
               </label>
               <Link
                 href="/forgot-password"
                 className="text-sm text-accent hover:text-accent-ink font-medium"
               >
-                Forgot password?
+                {t("auth.forgotPassword")}
               </Link>
             </div>
             <Button
@@ -149,9 +151,9 @@ function LoginForm() {
               isLoading={loading}
             >
               {loading ? (
-                "Signing in..."
+                t("auth.signingIn")
               ) : (
-                "Sign in"
+                t("auth.loginButton")
               )}
             </Button>
           </form>
@@ -159,12 +161,12 @@ function LoginForm() {
 
         {/* Footer */}
         <p className="text-center text-sm text-slate mt-6">
-          Don&apos;t have an account?{" "}
+          {t("auth.noAccount")}{" "}
           <Link
             href="/signup"
             className="text-accent hover:text-accent-ink font-medium"
           >
-            Start your free trial
+            {t("auth.startFreeTrial")}
           </Link>
         </p>
       </div>

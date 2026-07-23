@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useQuery } from "@tanstack/react-query";
 import { useUserId } from "@/hooks/use-user-profile";
+import { useI18n } from "@/i18n/provider";
 
 interface ClassAssignment {
   id: string;
@@ -18,6 +19,7 @@ interface ClassAssignment {
 }
 
 export default function MyClassesPage() {
+  const { t } = useI18n();
   const userId = useUserId();
 
   const { data: assignments = [], isLoading: loading, error } = useQuery<ClassAssignment[]>({
@@ -47,17 +49,17 @@ export default function MyClassesPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "My Classes" }]} />
+      <Breadcrumbs items={[{ label: t("nav.my_classes") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="My Classes"
-        description="Your assigned classes and subjects"
+        title={t("myClasses.title")}
+        description={t("myClasses.description")}
       />
 
       {error ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <AlertCircle className="h-10 w-10 text-danger mb-3" />
-          <p className="text-sm font-medium text-ink">Failed to load data</p>
+          <p className="text-sm font-medium text-ink">{t("common.failed_to_load")}</p>
           <p className="text-xs text-slate mt-1">{error.message}</p>
         </div>
       ) : loading ? (
@@ -69,8 +71,8 @@ export default function MyClassesPage() {
       ) : assignments.length === 0 ? (
         <EmptyState
           icon={GraduationCap}
-          title="No class assignments"
-          description="Ask your school admin to assign you to classes and subjects."
+          title={t("myClasses.no_assignments")}
+          description={t("myClasses.no_assignments_description")}
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -84,7 +86,7 @@ export default function MyClassesPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-slate">
-                    Subject: {assignment.subject_name}
+                    {t("myClasses.subject")}: {assignment.subject_name}
                   </p>
                 </CardContent>
               </Card>

@@ -5,8 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 import Link from "next/link";
+import { useI18n } from "@/i18n/provider";
 
 function SuccessContent() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const referenceId = searchParams.get("ref");
 
@@ -16,20 +18,19 @@ function SuccessContent() {
         <CheckCircle className="h-8 w-8 text-success" />
       </div>
       <h1 className="font-display text-2xl font-bold text-ink mb-2">
-        Payment Successful
+        {t("payment.successTitle")}
       </h1>
       <p className="text-slate mb-6">
-        Your payment has been processed successfully. Your subscription is
-        now active.
+        {t("payment.successDesc")}
       </p>
       {referenceId && (
         <p className="text-sm text-slate mb-6">
-          Reference: <span className="font-mono">{referenceId}</span>
+          {t("payment.reference", { ref: referenceId })}
         </p>
       )}
       <Link href="/dashboard">
         <Button className="bg-accent hover:bg-accent/90 text-white">
-          Go to Dashboard
+          {t("payment.goToDashboard")}
         </Button>
       </Link>
     </div>

@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { useQuery } from "@tanstack/react-query";
 import { useSchoolId } from "@/hooks/use-user-profile";
+import { useI18n } from "@/i18n/provider";
 
 interface Book {
   id: string;
@@ -24,6 +25,7 @@ interface Book {
 export default function LibraryPage() {
   const router = useRouter();
   const schoolId = useSchoolId();
+  const { t } = useI18n();
 
   const { data: books = [], isLoading: loading, error } = useQuery<Book[], Error>({
     queryKey: ["library-books", schoolId],
@@ -45,26 +47,26 @@ export default function LibraryPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-10 w-10 text-danger mb-3" />
-        <p className="text-sm font-medium text-ink">Failed to load data</p>
+        <p className="text-sm font-medium text-ink">{t("common.failedToLoad")}</p>
         <p className="text-xs text-slate mt-1">{error.message}</p>
       </div>
     );
   }
 
   const columns = [
-    { key: "title", header: "Title" },
-    { key: "author", header: "Author" },
+    { key: "title", header: t("library.bookTitle") },
+    { key: "author", header: t("library.author") },
     {
       key: "isbn",
-      header: "ISBN",
+      header: t("library.isbn"),
       render: (item: Book) => (
         <span className="font-mono text-xs">{item.isbn || "—"}</span>
       ),
     },
-    { key: "category", header: "Category" },
+    { key: "category", header: t("common.category") },
     {
       key: "available_copies",
-      header: "Available",
+      header: t("library.quantity"),
       className: "text-center",
       render: (item: Book) => (
         <span
@@ -80,15 +82,15 @@ export default function LibraryPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Library" }]} />
+      <Breadcrumbs items={[{ label: t("library.title") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Library"
-        description="Manage book catalog and issue/return transactions"
+        title={t("library.title")}
+        description={t("library.manageBooks")}
         action={
           <Button className="bg-accent hover:bg-accent/90 text-white">
             <Plus className="h-4 w-4 mr-2" />
-            Add Book
+            {t("library.addBook")}
           </Button>
         }
       />
@@ -102,16 +104,16 @@ export default function LibraryPage() {
       ) : books.length === 0 ? (
         <EmptyState
           icon={BookOpen}
-          title="Library is empty"
-          description="Add books to your catalog to start tracking issues and returns."
-          action={{ label: "Add Book", onClick: () => router.push("/library/issue") }}
+          title={t("library.noBooks")}
+          description={t("library.addFirstBook")}
+          action={{ label: t("library.addBook"), onClick: () => router.push("/library/issue") }}
         />
       ) : (
         <DataTable
           data={books}
           columns={columns}
           searchKeys={["title", "author", "isbn", "category"]}
-          searchPlaceholder="Search by title, author, or ISBN..."
+          searchPlaceholder={t("common.search")}
         />
       )}
     </div>

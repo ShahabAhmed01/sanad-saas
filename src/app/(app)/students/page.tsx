@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { useI18n } from "@/i18n/provider";
 
 interface Student {
   id: string;
@@ -39,6 +40,7 @@ async function fetchStudents(schoolId: string): Promise<Student[]> {
 export default function StudentsPage() {
   const router = useRouter();
   const schoolId = useSchoolId();
+  const { t } = useI18n();
 
   const { data: students = [], isLoading: loading, error: queryError } = useQuery({
     queryKey: queryKeys.school.students(schoolId),
@@ -51,14 +53,14 @@ export default function StudentsPage() {
   const columns = [
     {
       key: "admission_number",
-      header: "Adm. No.",
+      header: t("students.columns.admNo"),
       render: (item: Student) => (
         <span className="font-mono text-xs">{item.admission_number}</span>
       ),
     },
     { 
       key: "full_name", 
-      header: "Name",
+      header: t("students.columns.name"),
       renderPreview: (item: Student) => (
         <div className="space-y-2">
           <div>
@@ -67,15 +69,15 @@ export default function StudentsPage() {
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <p className="text-muted-foreground">Gender</p>
+              <p className="text-muted-foreground">{t("students.columns.gender")}</p>
               <p className="font-medium capitalize">{item.gender || "—"}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Status</p>
+              <p className="text-muted-foreground">{t("students.columns.status")}</p>
               <p className="font-medium capitalize">{item.status}</p>
             </div>
             <div className="col-span-2">
-              <p className="text-muted-foreground">Admitted</p>
+              <p className="text-muted-foreground">{t("students.columns.admitted")}</p>
               <p className="font-medium">
                 {item.admission_date
                   ? new Date(item.admission_date).toLocaleDateString("en-PK")
@@ -88,14 +90,14 @@ export default function StudentsPage() {
     },
     {
       key: "gender",
-      header: "Gender",
+      header: t("students.columns.gender"),
       render: (item: Student) => (
         <span className="capitalize">{item.gender || "—"}</span>
       ),
     },
     {
       key: "status",
-      header: "Status",
+      header: t("students.columns.status"),
       render: (item: Student) => (
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
@@ -112,7 +114,7 @@ export default function StudentsPage() {
     },
     {
       key: "admission_date",
-      header: "Admission Date",
+      header: t("students.columns.admissionDate"),
       render: (item: Student) =>
         item.admission_date
           ? new Date(item.admission_date).toLocaleDateString("en-PK")
@@ -122,11 +124,11 @@ export default function StudentsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs items={[{ label: "Students" }]} />
+      <Breadcrumbs items={[{ label: t("students.title") }]} />
 
       <PageHeader
-        title="Student Management"
-        description="Manage your school's students"
+        title={t("students.management")}
+        description={t("students.manageStudents")}
         action={
           <div className="flex gap-2">
             <Button
@@ -134,14 +136,14 @@ export default function StudentsPage() {
               onClick={() => router.push("/students/import")}
             >
               <Upload className="h-4 w-4 mr-2" />
-              Import CSV
+              {t("students.importCSV")}
             </Button>
             <Button
               className="bg-accent hover:bg-accent/90 text-white"
               onClick={() => router.push("/students/create")}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Student
+              {t("students.addStudent")}
             </Button>
           </div>
         }
@@ -165,16 +167,16 @@ export default function StudentsPage() {
       ) : students.length === 0 ? (
         <EmptyState
           icon={GraduationCap}
-          title="No students yet"
-          description="Add your first student or import a CSV file with your student data."
-          action={{ label: "Add Student", onClick: () => router.push("/students/import") }}
+          title={t("students.noStudentsYet")}
+          description={t("students.addFirstStudent")}
+          action={{ label: t("students.addStudent"), onClick: () => router.push("/students/import") }}
         />
       ) : (
         <DataTable
           data={students}
           columns={columns}
           searchKeys={["full_name", "admission_number"]}
-          searchPlaceholder="Search by name or admission number..."
+          searchPlaceholder={t("students.searchByNameOrAdm")}
           onRowClick={(item) => {
             toast.info(`Viewing ${item.full_name}`, {
               description: `Admission #${item.admission_number}`,

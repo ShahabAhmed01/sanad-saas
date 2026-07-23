@@ -15,6 +15,8 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { toast } from "sonner";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
+import { logAuditEvent } from "@/lib/audit-client";
+import { useI18n } from "@/i18n/provider";
 
 interface ExamSchedule {
   id: string;
@@ -78,6 +80,7 @@ async function fetchStudentsAndMarks(selectedSchedule: string): Promise<StudentM
 }
 
 export default function MarksEntryPage() {
+  const { t } = useI18n();
   const [selectedSchedule, setSelectedSchedule] = useState<string>("");
   const [overrides, setOverrides] = useState<Record<string, Partial<StudentMark>>>({});
   const [saved, setSaved] = useState(false);
@@ -125,7 +128,14 @@ export default function MarksEntryPage() {
       return records;
     },
     onSuccess: (records) => {
-      toast.success("Marks saved", { description: `${records.length} student marks recorded` });
+      toast.success(t("gradebook.toast_saved"), { description: `${records.length} student marks recorded` });
+      logAuditEvent("marks_entry", {
+        entityType: "marks",
+        metadata: {
+          schedule_id: selectedSchedule,
+          student_count: records.length,
+        },
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       queryClient.invalidateQueries({
@@ -133,7 +143,7 @@ export default function MarksEntryPage() {
       });
     },
     onError: (error) => {
-      toast.error("Failed to save marks", { description: error.message });
+      toast.error(t("gradebook.toast_save_failed"), { description: error.message });
     },
   });
 
@@ -146,16 +156,16 @@ export default function MarksEntryPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: "Gradebook" }, { label: "Enter Marks" }]} />
+      <Breadcrumbs items={[{ label: t("nav.gradebook") }, { label: t("gradebook.marks_entry") }]} />
       <div className="space-y-6">
       <PageHeader
-        title="Marks Entry"
-        description="Enter marks for an exam subject"
+        title={t("gradebook.marks_entry")}
+        description={t("gradebook.marks_entry_description")}
         action={
           selectedSchedule && students.length > 0 ? (
             <Button onClick={() => saveMutation.mutate()} isLoading={saveMutation.isPending} className={cn("text-white", saved ? "bg-success" : "bg-accent hover:bg-accent/90")}>
               <Save className="h-4 w-4 mr-2" />
-              {saved ? "Saved!" : "Save Marks"}
+              {saved ? t("gradebook.saved") : t("gradebook.save_marks")}
             </Button>
           ) : undefined
         }
@@ -163,13 +173,13 @@ export default function MarksEntryPage() {
 
       <Card className="border-slate-light max-w-lg">
         <CardContent className="p-4">
-          <Label htmlFor="exam-subject" className="text-ink">Select Exam Subject</Label>
+          <Label htmlFor="exam-subject" className="text-ink">{t("gradebook.select_exam_subject")}</Label>
           <Select
             id="exam-subject"
             value={selectedSchedule}
             onChange={(e) => setSelectedSchedule(e.target.value)}
             className="mt-1.5 flex h-10 w-full rounded-lg border border-slate-light bg-paper-raised px-3 py-2 text-sm text-ink"
-            placeholder="Choose exam subject..."
+            placeholder={t("gradebook.choose_exam_subject")}
             options={schedules.map((s) => ({ value: s.id, label: `${s.exam_name} — ${s.subject_name} (${s.class_name}) [Max: ${s.max_marks}]` }))}
           />
         </CardContent>
@@ -196,14 +206,15 @@ export default function MarksEntryPage() {
                 min={0}
                 max={schedules.find((sc) => sc.id === selectedSchedule)?.max_marks || 100}
               />
-              <label className="flex items-center gap-1 text-xs text-slate">
+              <label htmlFor={`absent-${s.student_id}`} className="flex items-center gap-1 text-xs text-slate">
                 <input
+                  id={`absent-${s.student_id}`}
                   type="checkbox"
                   checked={s.is_absent}
                   onChange={(e) => updateMark(s.student_id, "is_absent", e.target.checked)}
                   className="rounded"
                 />
-                Absent
+                {t("gradebook.absent")}
               </label>
             </div>
           ))}
