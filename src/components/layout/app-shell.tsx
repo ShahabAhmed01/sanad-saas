@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { CommandPalette } from "@/components/command-palette";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
+import { SessionExpiryModal } from "@/components/auth/session-expiry-modal";
 import { useSmartDefaults } from "@/hooks/use-smart-defaults";
 import { Search } from "lucide-react";
 import { useI18n } from "@/i18n/provider";
@@ -25,6 +26,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Command Palette */}
       <CommandPalette />
       <KeyboardShortcuts />
+      <SessionExpiryModal />
 
       {/* Desktop Sidebar */}
       <Sidebar

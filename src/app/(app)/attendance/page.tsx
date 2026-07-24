@@ -63,9 +63,20 @@ export default function AttendancePage() {
         title={t("nav.attendance")}
         description={t("attendance.tracking_for").replace("{date}", new Date().toLocaleDateString("en-PK", { weekday: "long", year: "numeric", month: "long", day: "numeric" }))}
         action={
-          <Button className="bg-accent hover:bg-accent/90 text-white">
-            {t("attendance.take_attendance")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => router.push("/attendance/reports")}>
+              {t("nav.attendanceReports")}
+            </Button>
+            <Button variant="outline" onClick={() => router.push("/attendance/absent")}>
+              {t("nav.absentStudents")}
+            </Button>
+            <Button variant="outline" onClick={() => router.push("/attendance/staff")}>
+              {t("nav.staffAttendance")}
+            </Button>
+            <Button className="bg-accent hover:bg-accent/90 text-white" onClick={() => router.push("/attendance/mark")}>
+              {t("attendance.markAttendance")}
+            </Button>
+          </div>
         }
       />
 

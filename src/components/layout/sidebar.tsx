@@ -17,6 +17,14 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Calendar,
+  BarChart3,
+  Trash2,
+  CreditCard,
+  HelpCircle,
+  FileText,
+  Award,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/provider";
@@ -34,10 +42,18 @@ const defaultNavItems: NavItem[] = [
   { labelKey: "nav.attendance", href: "/attendance", icon: CalendarCheck },
   { labelKey: "nav.fees", href: "/fees", icon: Banknote },
   { labelKey: "nav.exams", href: "/exams", icon: ClipboardList },
+  { labelKey: "nav.performance", href: "/performance", icon: BarChart3 },
+  { labelKey: "nav.calendar", href: "/calendar", icon: Calendar },
   { labelKey: "nav.library", href: "/library", icon: BookOpen },
   { labelKey: "nav.transport", href: "/transport", icon: Bus },
+  { labelKey: "nav.certificates", href: "/certificates", icon: Award },
+  { labelKey: "nav.payroll", href: "/payroll", icon: FileText },
   { labelKey: "nav.notifications", href: "/notifications", icon: Bell },
+  { labelKey: "nav.trash", href: "/trash", icon: Trash2 },
   { labelKey: "nav.settings", href: "/settings", icon: Settings },
+  { labelKey: "nav.profile", href: "/profile", icon: User },
+  { labelKey: "nav.billing", href: "/billing", icon: CreditCard },
+  { labelKey: "nav.help", href: "/help", icon: HelpCircle },
 ];
 
 interface SidebarProps {

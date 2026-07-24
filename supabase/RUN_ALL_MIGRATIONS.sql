@@ -1934,3 +1934,89 @@ insert into public.plans (name, slug, price_pkr_monthly, price_pkr_yearly, max_s
   ('Growth', 'growth', 7999, 79990, 500, 100, 5000, '{"all": true}'),
   ('Institution', 'institution', 15999, 159990, 1500, 300, 20000, '{"all": true}'),
   ('Enterprise', 'enterprise', 0, 0, null, null, null, '{"all": true}');
+
+-- =========================================================
+-- Migration 004: Add must_change_password column to staff table
+-- =========================================================
+
+alter table public.staff
+  add column if not exists must_change_password boolean not null default false;
+
+-- Also add updated_at trigger if not already present
+create or replace function public.update_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+-- Drop existing trigger if present, then recreate
+drop trigger if exists update_staff_updated_at on public.staff;
+create trigger update_staff_updated_at
+  before update on public.staff
+  for each row
+  execute function public.update_updated_at();
+
+-- =========================================================
+-- Migration 005: Add missing tables for feature parity
+-- Calendar Events, Deleted Records (Trash)
+-- =========================================================
+
+-- Calendar Events
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  date DATE NOT NULL,
+  end_date DATE,
+  start_time TIME,
+  end_time TIME,
+  event_type TEXT NOT NULL DEFAULT 'event' CHECK (event_type IN ('event', 'holiday', 'exam', 'test', 'assignment', 'meeting', 'other')),
+  color TEXT DEFAULT '#3b82f6',
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "School members can view calendar events" ON calendar_events
+    FOR SELECT USING (school_id = current_staff_school_id());
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "School admins can manage calendar events" ON calendar_events
+    FOR ALL USING (school_id = current_staff_school_id() AND current_staff_role() = 'school_admin');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_calendar_events_school_date ON calendar_events(school_id, date);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_school_type ON calendar_events(school_id, event_type);
+
+-- Deleted Records (Trash)
+CREATE TABLE IF NOT EXISTS deleted_records (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  entity_type TEXT NOT NULL,
+  entity_id UUID NOT NULL,
+  data JSONB NOT NULL,
+  deleted_by UUID REFERENCES auth.users(id),
+  deleted_at TIMESTAMPTZ DEFAULT now(),
+  expires_at TIMESTAMPTZ DEFAULT (now() + INTERVAL '30 days'),
+  restored_at TIMESTAMPTZ
+);
+
+ALTER TABLE deleted_records ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "School admins can manage trash" ON deleted_records
+    FOR ALL USING (school_id = current_staff_school_id() AND current_staff_role() = 'school_admin');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_deleted_records_school_entity ON deleted_records(school_id, entity_type);
+CREATE INDEX IF NOT EXISTS idx_deleted_records_expires ON deleted_records(expires_at) WHERE restored_at IS NULL;

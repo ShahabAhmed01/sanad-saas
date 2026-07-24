@@ -179,6 +179,9 @@ export default function StaffPage() {
           columns={columns}
           searchKeys={["full_name", "role", "phone"]}
           searchPlaceholder={t("staff.searchByNameRolePhone")}
+          onRowClick={(item) => {
+            router.push(`/staff/${item.id}`);
+          }}
         />
       )}
     </div>

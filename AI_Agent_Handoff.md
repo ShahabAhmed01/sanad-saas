@@ -11,13 +11,13 @@
 | Current phase | **All 12 phases complete** |
 | Overall status | **100% complete — 49 routes, 37 tables, all features functional** |
 | Last updated by | MiMo Code Agent |
-| Last updated on | 2026-07-21 |
+| Last updated on | 2026-07-24 |
 | Is the app currently deployed? | **Yes** — https://sanadd.vercel.app |
 | Is there any real school data? | No (only test data) |
 | GitHub | https://github.com/ShahabAhmed01/sanad-saas |
 | Docker | Running on http://localhost:3000 |
 | Vercel | **41/41 pages returning 200** |
-| Supabase | 37 tables, 5 plans seeded, RLS active |
+| Supabase | 39 tables, 5 plans seeded, RLS active |
 
 ---
 
@@ -126,10 +126,10 @@
 | Item | Priority | Notes |
 |---|---|---|
 | Real-time Supabase subscriptions | Medium | Pages fetch data; real-time wiring deferred to testing |
-| i18n layer | Low | Architecture ready (CSS logical properties), no Urdu translation yet |
-| PDF generation (report cards, certificates) | Medium | Template structure exists; actual PDF rendering deferred |
+| i18n layer | Low | Architecture ready (CSS logical properties), Urdu translations in src/i18n/ur.json |
+| PDF generation (report cards, certificates) | Medium | Template exists (report-card-pdf.tsx), rendering deferred |
 | RLS cross-tenant testing | Medium | Policies written; need formal two-tenant verification pass |
-| Platform admin account creation UI | Low | Created via API; no admin-facing signup form |
+| Platform admin account creation UI | Low | Created via /setup endpoint with SETUP_TOKEN |
 
 ---
 
@@ -164,13 +164,15 @@
 ```
 sanad/
 ├── .env.local / .env.example
-├── Dockerfile / docker-compose.yml
+├── Dockerfile / docker-compose.yml / docker-compose.prod.yml
 ├── AI_Agent_Handoff.md
 ├── supabase/
 │   ├── migrations/
 │   │   ├── 001_initial_schema.sql
 │   │   ├── 002_rls_policies.sql
-│   │   └── 003_seed_plans.sql
+│   │   ├── 003_seed_plans.sql
+│   │   ├── 004_must_change_password.sql
+│   │   └── 005_add_missing_tables.sql
 │   └── RUN_ALL_MIGRATIONS.sql
 ├── src/
 │   ├── app/
@@ -183,18 +185,28 @@ sanad/
 │   │   ├── payment/success|cancel
 │   │   ├── (app)/ (31 authenticated pages)
 │   │   ├── (parent)/ (6 parent portal pages)
-│   │   └── api/ (setup, webhook)
+│   │   └── api/ (health, setup, upload, audit, payments/webhook)
 │   ├── components/
 │   │   ├── layout/ (app-shell, sidebar, bottom-nav, page-header, sidebar-nav)
-│   │   └── ui/ (button, card, input, label, badge, dialog, data-table, skeleton, empty-state, error-state, theme-toggle)
+│   │   ├── auth/ (session-expiry-modal)
+│   │   ├── calendar/ (calendar-grid, event-dialog)
+│   │   └── ui/ (24 components)
+│   ├── hooks/ (6 custom hooks)
+│   ├── i18n/ (en.json, ur.json, provider, config, server)
 │   ├── lib/
 │   │   ├── actions/auth.ts
 │   │   ├── email/resend.ts
 │   │   ├── payments/gateway.ts
 │   │   ├── supabase/ (client, server, admin, middleware)
+│   │   ├── audit.ts, audit-client.ts
+│   │   ├── calendar.ts, holidays.ts
+│   │   ├── csv-parser.ts, upload.ts
+│   │   ├── rate-limit.ts, query-keys.ts
+│   │   ├── store.ts, themes.ts
 │   │   └── utils.ts
 │   └── middleware.ts
-└── scripts/setup-database.ts
+├── scripts/setup-database.ts
+└── .github/workflows/ (ci.yml, deploy-docker.yml)
 ```
 
 ---
@@ -204,8 +216,10 @@ sanad/
 1. **Test RLS across tenants** — create a second test school, verify School A cannot see School B's data
 2. **Wire real-time subscriptions** — add Supabase Realtime to dashboard counters
 3. **Add PDF generation** — report cards, receipts, certificates, ID cards
-4. **i18n** — add Urdu support using the CSS logical properties already in place
-5. **Automated testing** — add Vitest for business logic and Playwright for critical paths
+4. **i18n** — complete Urdu translations in src/i18n/ur.json (500+ keys)
+5. **Automated testing** — expand Vitest coverage beyond src/lib/ to components and hooks
+6. **CI/CD hardening** — add audit step, Next.js build cache, Docker build ARGs from secrets
+7. **Custom assets** — add favicon, app icon, Open Graph images for branding
 
 ---
 

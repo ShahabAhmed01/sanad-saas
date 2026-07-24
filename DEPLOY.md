@@ -25,12 +25,14 @@ Complete deployment guide for Vercel, Docker, Supabase, and GitHub.
 
 ### Run Migrations
 1. Go to SQL Editor: `https://supabase.com/dashboard/project/<your-project>/sql/new`
-2. Run these 3 files **in order** (copy-paste each, click Run):
+2. Run these 5 files **in order** (copy-paste each, click Run):
 
 ```
 supabase/migrations/001_initial_schema.sql    (37 tables + indexes)
 supabase/migrations/002_rls_policies.sql      (RLS policies)
 supabase/migrations/003_seed_plans.sql         (5 pricing plans)
+supabase/migrations/004_must_change_password.sql (password change column + trigger)
+supabase/migrations/005_add_missing_tables.sql   (calendar_events + deleted_records)
 ```
 
 Or run the combined file:
@@ -74,7 +76,7 @@ cp .env.example .env.local
 1. Go to https://vercel.com/new
 2. Import GitHub repo: `ShahabAhmed01/sanad-saas`
 3. Framework: Next.js (auto-detected)
-4. Root directory: **leave empty** (default `/`)
+4. Root directory: **`sanad/`**
 5. Build command: `npm run build` (auto-detected)
 6. Install command: `npm ci` (auto-detected)
 

@@ -37,6 +37,29 @@ export const metadata: Metadata = {
   title: "Sanad — School & Academy Management",
   description:
     "A complete staff, student, and operations management platform for Pakistani schools and academies.",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "32x32" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/manifest.json",
+  openGraph: {
+    title: "Sanad — School & Academy Management",
+    description:
+      "A complete staff, student, and operations management platform for Pakistani schools and academies.",
+    url: "https://sanadd.vercel.app",
+    siteName: "Sanad",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sanad — School & Academy Management",
+    description:
+      "A complete staff, student, and operations management platform for Pakistani schools and academies.",
+  },
 };
 
 export default function RootLayout({
@@ -50,6 +73,11 @@ export default function RootLayout({
       dir="ltr"
       className={`${ibmPlexSans.variable} ${ibmPlexMono.variable} ${fraunces.variable} ${notoNastaliqUrdu.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.ico" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+      </head>
       <body className="min-h-full flex flex-col font-sans">
         <HtmlAttributes />
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-accent focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:outline-none focus:ring-2 focus:ring-ring">

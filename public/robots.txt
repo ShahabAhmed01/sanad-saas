@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /setup
+Disallow: /platform
+
+Sitemap: https://sanadd.vercel.app/sitemap.xml

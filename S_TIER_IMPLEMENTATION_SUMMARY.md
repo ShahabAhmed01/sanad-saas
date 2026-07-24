@@ -1,7 +1,7 @@
 # S-Tier Implementation Summary — Sanad SaaS
 
-**Date:** July 21, 2026  
-**Status:** 12 phases completed, all type-checks pass, production build successful
+**Date:** July 24, 2026  
+**Status:** 12 phases completed, all type-checks pass, production build successful, infrastructure hardened
 
 ---
 
@@ -114,7 +114,7 @@
 ---
 
 ## New Dependencies Added
-- `next-intl` — i18n framework (installed but using custom provider for simplicity)
+- `prettier-plugin-tailwindcss` — Tailwind class sorting for Prettier
 
 ## Files Created (15 new files)
 1. `src/lib/themes.ts` — Theme definitions and CSS variable mapping
@@ -133,7 +133,7 @@
 14. `src/i18n/provider.tsx` — i18n context provider
 15. `S_TIER_IMPLEMENTATION_SUMMARY.md` — This file
 
-## Files Modified (5 files)
+## Files Modified (8 files)
 1. `src/app/globals.css` — Added theme transitions, RTL support, Urdu font styles
 2. `src/app/layout.tsx` — Added ThemeProvider, I18nProvider, Noto Nastaliq Urdu font
 3. `src/components/layout/app-shell.tsx` — Added CommandPalette, search trigger
@@ -165,9 +165,9 @@
 2. **Real-time Notifications** — Supabase Realtime subscriptions
 3. **PWA Support** — Offline-first for attendance marking
 4. **WhatsApp Integration** — Fee reminders and announcements
-5. **Automated Testing** — Vitest + Playwright
-6. **CI/CD Pipeline** — GitHub Actions
-7. **More Landing Page Content** — Video demo, case studies
+5. **Automated Testing** — Expand Vitest coverage beyond src/lib/, add Playwright
+6. **CI/CD Hardening** — Audit step, build cache, Docker build ARGs from secrets
+7. **Custom Assets** — Favicon, app icon, Open Graph images
 8. **Mobile App** — React Native / Flutter native app
 
 ---

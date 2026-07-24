@@ -11,8 +11,13 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/sanad
 
 jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
   build-and-push:
     name: Build & Push
+    needs: ci
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -50,5 +55,9 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_APP_URL=https://sanadd.vercel.app
           cache-from: type=gha
           cache-to: type=gha,mode=max

@@ -10,9 +10,8 @@ import "dotenv/config";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-async function runSQL(sql: string, label: string) {
+async function _runSQL(sql: string, label: string) {
   console.log(`\n▶ Running ${label}...`);
 
   // Use Supabase's built-in SQL execution endpoint
@@ -110,7 +109,7 @@ async function main() {
         success = true;
         console.log(`  ✓ ${migration} completed via SQL endpoint`);
       }
-    } catch (e) {
+    } catch {
       // Ignore
     }
 

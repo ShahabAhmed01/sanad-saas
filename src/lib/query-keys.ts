@@ -24,6 +24,26 @@ export const queryKeys = {
     gradebook: (schoolId: string) =>
       ["school", schoolId, "gradebook"] as const,
     settings: (schoolId: string) => ["school", schoolId, "settings"] as const,
+    calendar: (schoolId: string) => ["school", schoolId, "calendar"] as const,
+    calendarEvents: (schoolId: string) =>
+      ["school", schoolId, "calendar", "events"] as const,
+    trash: (schoolId: string) => ["school", schoolId, "trash"] as const,
+    performance: (schoolId: string) =>
+      ["school", schoolId, "performance"] as const,
+    paymentHistory: (schoolId: string) =>
+      ["school", schoolId, "paymentHistory"] as const,
+    feeDefaulters: (schoolId: string) =>
+      ["school", schoolId, "feeDefaulters"] as const,
+    attendanceReports: (schoolId: string, dateRange?: string) =>
+      ["school", schoolId, "attendance", "reports", dateRange ?? ""] as const,
+    staffAttendance: (schoolId: string, date: string) =>
+      ["school", schoolId, "staffAttendance", date] as const,
+    academicYears: (schoolId: string) =>
+      ["school", schoolId, "academicYears"] as const,
+    classes: (schoolId: string) => ["school", schoolId, "classes"] as const,
+    subjects: (schoolId: string) => ["school", schoolId, "subjects"] as const,
+    subscription: (schoolId: string) =>
+      ["school", schoolId, "subscription"] as const,
   },
   // User-scoped queries
   user: {

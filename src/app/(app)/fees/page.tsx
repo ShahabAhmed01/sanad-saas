@@ -118,6 +118,12 @@ export default function FeesPage() {
           description={t("fees.description")}
           action={
             <div className="flex gap-2">
+              <Link href="/fees/defaulters">
+                <Button variant="outline">{t("nav.feeDefaulters")}</Button>
+              </Link>
+              <Link href="/fees/history">
+                <Button variant="outline">{t("nav.feeHistory")}</Button>
+              </Link>
               <Link href="/fees/structure">
                 <Button variant="outline">{t("fees.fee_structure")}</Button>
               </Link>

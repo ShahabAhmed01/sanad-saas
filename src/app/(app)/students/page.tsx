@@ -10,7 +10,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { GraduationCap, Plus, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { toast } from "sonner";
 import { useSchoolId } from "@/hooks/use-user-profile";
 import { queryKeys } from "@/lib/query-keys";
 import { useI18n } from "@/i18n/provider";
@@ -133,6 +132,13 @@ export default function StudentsPage() {
           <div className="flex gap-2">
             <Button
               variant="outline"
+              onClick={() => router.push("/students/promote")}
+            >
+              <GraduationCap className="h-4 w-4 mr-2" />
+              {t("studentPromotion.title")}
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => router.push("/students/import")}
             >
               <Upload className="h-4 w-4 mr-2" />
@@ -178,9 +184,7 @@ export default function StudentsPage() {
           searchKeys={["full_name", "admission_number"]}
           searchPlaceholder={t("students.searchByNameOrAdm")}
           onRowClick={(item) => {
-            toast.info(`Viewing ${item.full_name}`, {
-              description: `Admission #${item.admission_number}`,
-            });
+            router.push(`/students/${item.id}`);
           }}
         />
       )}
